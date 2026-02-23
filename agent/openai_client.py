@@ -1,0 +1,255 @@
+from __future__ import annotations
+
+import json
+import logging
+import os
+import time
+from typing import Any, Dict, Iterable
+
+import httpx
+
+
+logger = logging.getLogger(__name__)
+
+
+class MissingAPIKeyError(RuntimeError):
+    pass
+
+
+class OpenAIClient:
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str | None = None,
+        timeout: float = 120.0,
+        max_retries: int = 5,
+    ) -> None:
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        if not self.api_key:
+            raise MissingAPIKeyError(
+                "OPENAI_API_KEY is missing. Set it in the environment or .env."
+            )
+        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o")
+        self.timeout = timeout or 90.0
+        self.max_retries = max_retries
+        self.base_url = "https://api.openai.com/v1/chat/completions"
+
+    def generate_brief(
+        self,
+        *,
+        research: Dict[str, Any],
+        date: str,
+        tz: str,
+        watchlist: Iterable[str],
+    ) -> str:
+        watchlist_text = ", ".join([w for w in watchlist if w]) or "None"
+        prompt = (
+            "Write a concise, professional Morning Market Brief in markdown. "
+            "Use ONLY the research JSON provided. Do not add facts not in the JSON. "
+            "Do not include trade instructions or recommendations. "
+            "If a detail is missing, say 'Not specified'.\n\n"
+            "The brief MUST include a section titled '## SPY Tomorrow: Scenario Map (Not a recommendation)' "
+            "that summarizes 2-3 conditional scenarios derived strictly from the research JSON's "
+            "market_state, events, and weekly_context sections. "
+            "Each scenario must be written as an if/then market condition "
+            "(e.g., reaction to yields, whether price is inside or outside the expected move, "
+            "or holding/losing key levels). "
+            "Do NOT include trade instructions in the scenarios.\n\n"
+            f"Date: {date} ({tz})\n"
+            f"Watchlist: {watchlist_text}\n\n"
+            "Research JSON:\n"
+            f"{json.dumps(research, indent=2)}\n"
+        )
+
+        payload = {
+            "model": self.model,
+            "temperature": 0.2,
+            "messages": [
+                {"role": "system", "content": "You are a careful financial writer."},
+                {"role": "user", "content": prompt},
+            ],
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        response = self._post_with_retries(self.base_url, payload, headers)
+        data = response.json()
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError("Unexpected OpenAI response shape.") from exc
+        return content.strip()
+
+    def generate_research_from_search(
+        self,
+        *,
+        search_bundle: Dict[str, Any],
+        date: str,
+        tz: str,
+        watchlist: Iterable[str],
+        as_of: str,
+    ) -> Dict[str, Any]:
+        from datetime import datetime as _dt, timedelta
+        watchlist_text = ", ".join([w for w in watchlist if w]) or "None"
+        date_obj = _dt.strptime(date, "%Y-%m-%d").date()
+        day_of_week = date_obj.strftime("%A")
+        # Find next trading day (skip weekends; holidays are noted in prompt)
+        _next = date_obj + timedelta(days=1)
+        while _next.weekday() >= 5:  # 5=Sat, 6=Sun
+            _next += timedelta(days=1)
+        next_trading_day = _next.strftime("%Y-%m-%d (%A)")
+        schema = """
+{
+  "as_of": string,
+  "earnings": [ {"company":string,"ticker":string,"date":string,"time_hint":string|null,"notes":string,"sources":[string]} ],
+  "events": [ {"event":string,"date_time_local":string|null,"region":string,"why_it_matters":string,"sources":[string]} ],
+  "headlines": [ {"title":string,"topic":string,"tickers":[string], "impact":"high"|"medium"|"low", "one_line_take":string, "sources":[string]} ],
+  "weekly_context": {
+    "themes":[ {"theme":string,"evidence":[string],"sources":[string]} ],
+    "market_moves":[ {"asset":string,"move":string,"window":string,"sources":[string]} ]
+  },
+  "market_state": {
+    "spy": {"last":string,"prev_ohlc":{"o":string,"h":string,"l":string,"c":string},"premarket_change":string,"sources":[string]},
+    "futures": {"es_change":string,"overnight_high":string,"overnight_low":string,"notes":string,"sources":[string]},
+    "volatility": {"vix":string,"vix_change":string,"vvix":string,"term_structure":string,"expected_move_1d":string,"expected_move_7d":string,"sources":[string]},
+    "rates_fx_oil": {"us10y":string,"us10y_change":string,"dxy":string,"dxy_change":string,"wti":string,"wti_change":string,"sources":[string]},
+    "breadth": {"adv_dec":string,"notes":string,"leaders":string,"laggards":string,"sources":[string]},
+    "options_positioning": {"put_wall":string,"call_wall":string,"gamma_flip":string,"zero_dte_notes":string,"sources":[string]}
+  }
+}
+""".strip()
+        prompt = (
+            "You are given search results from Perplexity /search. "
+            "Use ONLY the information in those results to build a Morning Market Brief research pack. "
+            "Do not add facts that are not supported by the search results. "
+            "Return ONLY valid JSON that matches the schema below. No markdown, no code fences.\n\n"
+            f"As-of value (must use exactly): {as_of}\n"
+            f"Date: {date} ({day_of_week}) ({tz})\n"
+            f"Next trading day: {next_trading_day}\n"
+            f"Watchlist: {watchlist_text}\n\n"
+            "Requirements:\n"
+            "- Earnings and events for the next 7 calendar days starting from the NEXT TRADING DAY.\n"
+            "- CRITICAL DATE RULES for earnings and events:\n"
+            f"  - Today is {day_of_week} {date}. If today is a weekend or holiday, there are NO events or earnings today.\n"
+            "  - US markets are CLOSED on Saturdays, Sundays, and federal holidays (Presidents' Day = 3rd Monday of Feb, etc.).\n"
+            "  - If a source lists an event for 'this week' without a specific date, set date_time_local to null. NEVER assign it to today if today is a weekend/holiday.\n"
+            "  - Only use dates that are explicitly stated in the source data.\n"
+            "- Macro/events in the next 7 calendar days (central banks, CPI/PPI, PMI, jobs, auctions, GDP, PCE).\n"
+            "- 12 to 25 headlines from the last ~18 hours across broad market, sectors, and the watchlist.\n"
+            "- Weekly context covering last 5 trading days (themes and market moves).\n"
+            "- Every item must include at least one source URL string from the search results.\n"
+            "- If a detail is missing, use 'Not specified' in that field or return an empty list.\n\n"
+            "market_state extraction rules (CRITICAL — read carefully):\n"
+            "- spy.last: Most recent SPY ETF price (not ES futures). Look for '$SPX', 'SPY', or 'S&P 500' closing/last price.\n"
+            "- spy.prev_ohlc: Prior session open/high/low/close for SPY specifically. Use the ETF price, not the index or futures.\n"
+            "- spy.premarket_change: Premarket % change for SPY if available.\n"
+            "- futures.es_change: The E-mini S&P 500 (ES) futures % change or point change. Look for 'ESH' contract or 'E-mini S&P' settlement.\n"
+            "- futures.overnight_high / overnight_low: The ES futures overnight session high and low. These are futures prices (e.g. 6000+), NOT ETF prices.\n"
+            "- volatility.vix: The CBOE VIX index level (a number typically between 10 and 80).\n"
+            "- volatility.vix_change: VIX point or % change from prior close.\n"
+            "- volatility.vvix: CBOE VVIX level if mentioned.\n"
+            "- volatility.term_structure: 'contango' if front-month VIX < second-month, 'backwardation' if front > second, or 'Not specified'.\n"
+            "- volatility.expected_move_1d / expected_move_7d: SPY implied move from options if stated. Do NOT calculate this yourself.\n"
+            "- rates_fx_oil.us10y: 10-year US Treasury yield (e.g. '4.05%'). Look for 'T-note yield', '10-year yield', 'TNX'.\n"
+            "- rates_fx_oil.us10y_change: Yield change in bps or % from prior session.\n"
+            "- rates_fx_oil.dxy: US Dollar Index level. Look for 'DXY', 'dollar index', 'USD index'.\n"
+            "- rates_fx_oil.wti: WTI crude oil price. Look for 'WTI', 'crude oil', 'CL' futures.\n"
+            "- breadth.adv_dec: NYSE or Nasdaq advance/decline ratio or count.\n"
+            "- breadth.leaders / laggards: Best and worst performing sectors.\n"
+            "- options_positioning: ONLY populate put_wall, call_wall, gamma_flip if explicit strike levels are stated in the sources. Do NOT infer or estimate. Use 'Not specified' otherwise.\n"
+            "- Prefer primary sources: CBOE, CME, Barchart, Treasury.gov, Fed, BLS, BEA, Reuters, Bloomberg, FT, WSJ.\n"
+            "- If sources disagree on a number, provide a range and note 'mixed reports'.\n"
+            "- Do NOT confuse ES futures levels (e.g. 6851) with SPY ETF prices (e.g. 601). They are different instruments.\n\n"
+            f"Schema:\n{schema}\n\n"
+            "Search results JSON:\n"
+            f"{json.dumps(search_bundle, indent=2)}\n"
+        )
+
+        payload = {
+            "model": self.model,
+            "temperature": 0.2,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a precise financial research assistant.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        response = self._post_with_retries(self.base_url, payload, headers)
+        data = response.json()
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError("Unexpected OpenAI response shape.") from exc
+
+        json_text = _strip_code_fences(content)
+        try:
+            parsed = json.loads(json_text)
+        except json.JSONDecodeError as exc:
+            raise ValueError("OpenAI research response was not valid JSON.") from exc
+        return _normalize_keys(parsed)
+
+    def _post_with_retries(
+        self, url: str, payload: Dict[str, Any], headers: Dict[str, str]
+    ) -> httpx.Response:
+        last_error: Exception | None = None
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                response = httpx.post(
+                    url, json=payload, headers=headers, timeout=self.timeout
+                )
+                if response.status_code in {429} or response.status_code >= 500:
+                    raise httpx.HTTPStatusError(
+                        f"HTTP {response.status_code}",
+                        request=response.request,
+                        response=response,
+                    )
+                response.raise_for_status()
+                return response
+            except (httpx.RequestError, httpx.HTTPStatusError) as exc:
+                last_error = exc
+                if attempt == self.max_retries:
+                    break
+                backoff = 2 ** attempt * 5
+                logger.warning(
+                    "OpenAI request failed (attempt %s/%s). Retrying in %ss.",
+                    attempt,
+                    self.max_retries,
+                    backoff,
+                )
+                time.sleep(backoff)
+        raise RuntimeError("OpenAI request failed after retries.") from last_error
+
+
+def _normalize_keys(obj: Any) -> Any:
+    """Fix common LLM key typos like dots instead of underscores."""
+    _aliases = {"0dte_notes": "zero_dte_notes"}
+    if isinstance(obj, dict):
+        fixed = {}
+        for k, v in obj.items():
+            new_key = k.replace(".", "_").replace("-", "_").replace(" ", "_")
+            new_key = _aliases.get(new_key, new_key)
+            fixed[new_key] = _normalize_keys(v)
+        return fixed
+    if isinstance(obj, list):
+        return [_normalize_keys(item) for item in obj]
+    return obj
+
+
+def _strip_code_fences(text: str) -> str:
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.strip("`")
+        lines = [line for line in cleaned.splitlines() if line.strip()]
+        if lines and lines[0].lower().startswith("json"):
+            lines = lines[1:]
+        cleaned = "\n".join(lines)
+    return cleaned.strip()

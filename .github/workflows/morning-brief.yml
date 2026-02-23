@@ -1,0 +1,52 @@
+name: Morning Market Brief
+
+on:
+  schedule:
+    # Every hour, Mon-Fri, 6 AM - 5 PM CT (12:00-23:00 UTC)
+    - cron: "0 12-23 * * 1-5"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  generate-and-email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Get current date
+        id: date
+        run: echo "today=$(TZ=America/Chicago date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Run pipeline
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          OPENAI_MODEL: gpt-4o-mini
+        run: |
+          python -m agent.run \
+            --date "${{ steps.date.outputs.today }}" \
+            --tz America/Chicago \
+            --watchlist "AAPL,MSFT,NVDA" \
+            --out ./out
+
+      - name: Send email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Morning Market Brief - ${{ steps.date.outputs.today }}"
+          to: ganurag6@gmail.com
+          from: ${{ secrets.SMTP_USERNAME }}
+          content_type: text/plain
+          body_file: out/${{ steps.date.outputs.today }}/brief.md
+          attachments: out/${{ steps.date.outputs.today }}/research.json
