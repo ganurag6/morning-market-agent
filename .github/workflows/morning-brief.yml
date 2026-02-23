@@ -37,6 +37,10 @@ jobs:
             --watchlist "AAPL,MSFT,NVDA" \
             --out ./out
 
+      - name: Read brief into variable
+        id: brief
+        run: echo "body<<BRIEF_EOF" >> "$GITHUB_OUTPUT" && cat "out/${{ steps.date.outputs.today }}/brief.md" >> "$GITHUB_OUTPUT" && echo "BRIEF_EOF" >> "$GITHUB_OUTPUT"
+
       - name: Send email
         uses: dawidd6/action-send-mail@v3
         with:
@@ -47,6 +51,6 @@ jobs:
           subject: "Morning Market Brief - ${{ steps.date.outputs.today }}"
           to: ganurag6@gmail.com
           from: ${{ secrets.SMTP_USERNAME }}
-          content_type: text/plain
-          body_file: out/${{ steps.date.outputs.today }}/brief.md
+          body: ${{ steps.brief.outputs.body }}
+          convert_markdown: true
           attachments: out/${{ steps.date.outputs.today }}/research.json
