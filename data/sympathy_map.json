@@ -1,0 +1,105 @@
+{
+  "NVDA": {
+    "description": "AI/GPU leader. Earnings move entire semiconductor complex.",
+    "sympathy_plays": [
+      {
+        "ticker": "AMD",
+        "beta": 1.01,
+        "relationship": "peer_semiconductor",
+        "notes": "Moves nearly 1:1 with NVDA on earnings. Best sympathy play."
+      },
+      {
+        "ticker": "AVGO",
+        "beta": 0.85,
+        "relationship": "ai_infrastructure",
+        "notes": "Custom AI chip maker. Slower follower, lower beta."
+      },
+      {
+        "ticker": "TSM",
+        "beta": 0.70,
+        "relationship": "foundry_supplier",
+        "notes": "Manufactures NVDA chips. Supply chain proxy."
+      },
+      {
+        "ticker": "MRVL",
+        "beta": 0.90,
+        "relationship": "data_center_networking",
+        "notes": "Data center networking/custom silicon. High AI exposure."
+      }
+    ]
+  },
+  "AAPL": {
+    "description": "Consumer tech leader. Moves consumer discretionary and suppliers.",
+    "sympathy_plays": [
+      {
+        "ticker": "QCOM",
+        "beta": 0.65,
+        "relationship": "component_supplier",
+        "notes": "Modem supplier. Reacts to iPhone demand commentary."
+      },
+      {
+        "ticker": "SWKS",
+        "beta": 0.75,
+        "relationship": "rf_supplier",
+        "notes": "RF chip supplier for iPhone. High revenue concentration."
+      }
+    ]
+  },
+  "MSFT": {
+    "description": "Enterprise cloud and AI. Moves cloud/SaaS complex.",
+    "sympathy_plays": [
+      {
+        "ticker": "GOOGL",
+        "beta": 0.75,
+        "relationship": "mega_cap_tech",
+        "notes": "Cloud competitor. Reacts to cloud growth commentary."
+      },
+      {
+        "ticker": "CRM",
+        "beta": 0.60,
+        "relationship": "enterprise_software",
+        "notes": "Enterprise SaaS peer. Follows MSFT AI/cloud sentiment."
+      },
+      {
+        "ticker": "SNOW",
+        "beta": 0.70,
+        "relationship": "data_cloud",
+        "notes": "Data cloud. Reacts to enterprise spending commentary."
+      }
+    ]
+  },
+  "META": {
+    "description": "Social/ad tech. Moves digital advertising complex.",
+    "sympathy_plays": [
+      {
+        "ticker": "SNAP",
+        "beta": 1.20,
+        "relationship": "social_media_peer",
+        "notes": "High beta social media peer. Amplifies META moves."
+      },
+      {
+        "ticker": "PINS",
+        "beta": 0.80,
+        "relationship": "digital_advertising",
+        "notes": "Ad-supported platform. Follows ad spend trends."
+      }
+    ]
+  },
+  "AMZN": {
+    "description": "E-commerce and cloud. Dual exposure to consumer and enterprise.",
+    "sympathy_plays": [
+      {
+        "ticker": "SHOP",
+        "beta": 0.90,
+        "relationship": "ecommerce",
+        "notes": "E-commerce platform. Reacts to online spending trends."
+      },
+      {
+        "ticker": "GOOGL",
+        "beta": 0.55,
+        "relationship": "cloud_competitor",
+        "notes": "Cloud competitor. Follows AWS growth commentary."
+      }
+    ]
+  }
+}

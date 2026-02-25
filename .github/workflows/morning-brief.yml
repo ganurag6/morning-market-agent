@@ -1,9 +1,8 @@
 name: Morning Market Brief
 
 on:
-  schedule:
-    # Every hour, Mon-Fri, 7 AM - 2 PM CT (13:00-20:00 UTC)
-    - cron: "0 13-20 * * 1-5"
+  # Cron schedule removed — morning-recs.yml handles both pipeline + recommendations
+  # at 8:05 AM CST. Keep this workflow for manual standalone brief runs.
   workflow_dispatch: # Allow manual trigger
 
 jobs:

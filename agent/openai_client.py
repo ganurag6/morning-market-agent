@@ -197,6 +197,127 @@ class OpenAIClient:
             raise ValueError("OpenAI research response was not valid JSON.") from exc
         return _normalize_keys(parsed)
 
+    def generate_trade_recs(
+        self,
+        *,
+        snapshot: Dict[str, Any],
+        signals: list[Dict[str, Any]],
+        research: Dict[str, Any],
+        options_chains: Dict[str, Any],
+        sympathy_map: Dict[str, Any],
+        max_allocation: float = 5000.0,
+        watchlist: Iterable[str] = (),
+    ) -> Dict[str, Any]:
+        """Generate specific trade recommendations from rule signals and market data."""
+        watchlist_text = ", ".join([w for w in watchlist if w]) or "SPY"
+
+        triggered = [s for s in signals if s.get("triggered")]
+        long_count = sum(1 for s in triggered if s.get("direction") == "long")
+        short_count = sum(1 for s in triggered if s.get("direction") == "short")
+
+        events_today = []
+        for ev in research.get("events", []):
+            dt_str = ev.get("date_time_local", "") or ""
+            if research.get("date", "") in dt_str or "today" in dt_str.lower():
+                events_today.append(ev)
+
+        earnings_upcoming = research.get("earnings", [])[:5]
+
+        schema = """{
+  "recommendations": [
+    {
+      "ticker": "SPY",
+      "direction": "call" | "put",
+      "strike": 685.0,
+      "expiry": "2026-02-28",
+      "entry_timing": "At open" | "Wait for 9:45 AM CT pullback" | ...,
+      "allocation_dollars": 1500,
+      "max_loss_dollars": 750,
+      "stop_loss_pct": 50,
+      "take_profit_pct": 100,
+      "triggered_rules": ["R4", "R8"],
+      "reasoning": "...",
+      "confidence": "high" | "medium" | "low"
+    }
+  ],
+  "sympathy_plays": [
+    {
+      "primary_ticker": "NVDA",
+      "primary_catalyst": "Earnings after close",
+      "sympathy_ticker": "AMD",
+      "beta": 1.01,
+      "direction": "call" | "put",
+      "reasoning": "..."
+    }
+  ]
+}"""
+
+        prompt = (
+            "You are a quantitative trading assistant. Generate specific trade "
+            "recommendations based ONLY on the provided signals, market data, and "
+            "available options contracts. Do not add information not in the input.\n\n"
+            f"Date: {research.get('date', 'unknown')}\n"
+            f"Watchlist: {watchlist_text}\n\n"
+            f"Market Snapshot:\n{json.dumps(snapshot, indent=2)}\n\n"
+            f"Active Signals ({len(triggered)} triggered, {long_count} long, {short_count} short):\n"
+            f"{json.dumps(triggered, indent=2)}\n\n"
+            f"Today's Events:\n{json.dumps(events_today, indent=2)}\n\n"
+            f"Upcoming Earnings (next 5):\n{json.dumps(earnings_upcoming, indent=2)}\n\n"
+            f"Sympathy Map:\n{json.dumps(sympathy_map, indent=2)}\n\n"
+            f"Available Options Chains:\n{json.dumps(options_chains, indent=2)}\n\n"
+            f"Max Total Allocation: ${max_allocation:.0f}\n\n"
+            "Rules for generating recommendations:\n"
+            "1. Only recommend trades supported by at least one triggered signal.\n"
+            "2. Prefer SPY for directional macro plays; use individual names for event-driven plays.\n"
+            "3. Select strikes: ATM to 1% OTM for higher probability.\n"
+            "4. Select expiry: nearest Friday at least 2 days out from the available options.\n"
+            "5. Allocation per trade: $300-$500 (low confidence), $500-$1500 (medium), $1500-$2500 (high).\n"
+            "6. Stop loss: 50% of premium paid.\n"
+            "7. Take profit: 100-200% of premium paid.\n"
+            "8. If 3+ bullish signals, increase allocation. If mixed (long+short), reduce sizes.\n"
+            "9. Always include at least one hedge trade (opposite direction) if total allocation > $1000.\n"
+            "10. Include entry timing: 'at open' for gap plays, '9:45 AM CT' for pullback entries.\n"
+            "11. For sympathy plays, only include if a clear catalyst exists (earnings, major event).\n"
+            "12. If no signals are triggered, return empty recommendations.\n"
+            "13. Maximum 4 trade recommendations.\n\n"
+            "Return ONLY valid JSON matching this schema (no markdown, no code fences):\n"
+            f"{schema}\n"
+        )
+
+        payload = {
+            "model": self.model,
+            "temperature": 0.2,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a quantitative trading assistant. "
+                        "Generate precise, actionable trade recommendations "
+                        "based strictly on the provided data and signals."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        response = self._post_with_retries(self.base_url, payload, headers)
+        data = response.json()
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError("Unexpected OpenAI response shape.") from exc
+
+        json_text = _strip_code_fences(content)
+        try:
+            parsed = json.loads(json_text)
+        except json.JSONDecodeError as exc:
+            raise ValueError("OpenAI trade recs response was not valid JSON.") from exc
+        return _normalize_keys(parsed)
+
     def _post_with_retries(
         self, url: str, payload: Dict[str, Any], headers: Dict[str, str]
     ) -> httpx.Response:
