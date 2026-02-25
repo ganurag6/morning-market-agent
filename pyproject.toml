@@ -7,12 +7,17 @@ dependencies = [
   "httpx>=0.25",
   "pydantic>=2.5",
   "python-dotenv>=1.0",
+  "yfinance>=0.2",
+  "pandas>=2.0",
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest>=7.4",
 ]
+
+[tool.setuptools.packages.find]
+include = ["agent*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
