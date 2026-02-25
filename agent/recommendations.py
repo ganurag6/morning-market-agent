@@ -250,6 +250,83 @@ class MarketDataFetcher:
             logger.warning("Failed to fetch options for %s: %s", ticker, e)
             return {"ticker": ticker, "expiry": None, "calls": [], "puts": []}
 
+    def scan_watchlist(self, tickers: List[str]) -> List[Dict[str, Any]]:
+        """Scan watchlist tickers for technical setups (oversold, momentum, etc.)."""
+        logger.info("Scanning watchlist: %s", tickers)
+        scans = []
+        for ticker_str in tickers:
+            try:
+                t = yf.Ticker(ticker_str)
+                hist = t.history(period="2mo", interval="1d")
+                if hist.empty:
+                    continue
+                if isinstance(hist.columns, pd.MultiIndex):
+                    hist = hist.droplevel("Ticker", axis=1)
+
+                close = float(hist["Close"].iloc[-1])
+                prev_close = float(hist["Close"].iloc[-2]) if len(hist) >= 2 else close
+                day_change_pct = round((close - prev_close) / prev_close * 100, 2)
+
+                # 5-day return
+                if len(hist) >= 6:
+                    c5 = float(hist["Close"].iloc[-6])
+                    change_5d = round((close - c5) / c5 * 100, 2)
+                else:
+                    change_5d = None
+
+                # 20-day return
+                if len(hist) >= 21:
+                    c20 = float(hist["Close"].iloc[-21])
+                    change_20d = round((close - c20) / c20 * 100, 2)
+                else:
+                    change_20d = None
+
+                # 20-day SMA distance
+                sma20 = float(hist["Close"].rolling(20).mean().iloc[-1])
+                dist_sma = round((close - sma20) / sma20 * 100, 2)
+
+                # Volume ratio
+                avg_vol = float(hist["Volume"].rolling(20).mean().iloc[-1])
+                vol_ratio = round(float(hist["Volume"].iloc[-1]) / avg_vol, 2) if avg_vol > 0 else 1.0
+
+                # Determine signal
+                signals = []
+                if change_20d is not None and change_20d < -10:
+                    signals.append("deeply_oversold")
+                elif change_20d is not None and change_20d < -5:
+                    signals.append("oversold")
+                if dist_sma < -3:
+                    signals.append("well_below_sma")
+                elif dist_sma < 0:
+                    signals.append("below_sma")
+                if change_5d is not None and change_5d < -3:
+                    signals.append("5d_selloff")
+                if day_change_pct > 3:
+                    signals.append("momentum_breakout")
+                if vol_ratio > 1.5:
+                    signals.append("high_volume")
+                if change_20d is not None and change_20d > 10:
+                    signals.append("overbought")
+
+                scans.append({
+                    "ticker": ticker_str,
+                    "price": round(close, 2),
+                    "day_change_pct": day_change_pct,
+                    "change_5d_pct": change_5d,
+                    "change_20d_pct": change_20d,
+                    "distance_from_20sma_pct": dist_sma,
+                    "volume_ratio": vol_ratio,
+                    "signals": signals,
+                })
+                time.sleep(0.5)
+            except Exception as e:
+                logger.warning("Failed to scan %s: %s", ticker_str, e)
+                continue
+
+        # Sort: most interesting (most signals) first
+        scans.sort(key=lambda x: len(x.get("signals", [])), reverse=True)
+        return scans
+
     def get_market_snapshot(self, as_of: str) -> MarketSnapshot:
         """Assemble complete MarketSnapshot from all data sources."""
         spy = self.fetch_spy_snapshot()
@@ -923,37 +1000,87 @@ def _build_mock_recommendations() -> tuple[list[dict], list[dict]]:
             "strike": 686.0,
             "expiry": "2026-02-28",
             "entry_timing": "At open, limit near $3.50",
-            "allocation_dollars": 1500,
-            "max_loss_dollars": 750,
+            "allocation_dollars": 1200,
+            "max_loss_dollars": 600,
             "stop_loss_pct": 50,
             "take_profit_pct": 100,
             "triggered_rules": ["R4", "R8", "R9"],
-            "reasoning": "VIX above 20 with gap down and below 20-SMA. Triple confluence buy signal.",
+            "reasoning": "VIX above 20 with gap down and below 20-SMA. Triple confluence buy signal. Historically 100% win rate when VIX >20.",
             "confidence": "high",
+        },
+        {
+            "ticker": "AMD",
+            "direction": "call",
+            "strike": 160.0,
+            "expiry": "2026-02-28",
+            "entry_timing": "At open or on a dip to $158",
+            "allocation_dollars": 800,
+            "max_loss_dollars": 400,
+            "stop_loss_pct": 50,
+            "take_profit_pct": 150,
+            "triggered_rules": ["R4", "sympathy_NVDA"],
+            "reasoning": "AMD is deeply oversold (-14% over 20d) and has 1.01 beta to NVDA. With NVDA earnings today, AMD is the highest-conviction sympathy play.",
+            "confidence": "high",
+        },
+        {
+            "ticker": "MSFT",
+            "direction": "call",
+            "strike": 410.0,
+            "expiry": "2026-03-07",
+            "entry_timing": "Wait for 9:45 AM CT pullback entry",
+            "allocation_dollars": 600,
+            "max_loss_dollars": 300,
+            "stop_loss_pct": 50,
+            "take_profit_pct": 100,
+            "triggered_rules": ["R9", "oversold"],
+            "reasoning": "MSFT down -17% over 20 days, well below 20-SMA. Oversold bounce candidate with cloud/AI tailwinds from NVDA earnings sentiment.",
+            "confidence": "medium",
+        },
+        {
+            "ticker": "NVDA",
+            "direction": "call",
+            "strike": 135.0,
+            "expiry": "2026-02-28",
+            "entry_timing": "After earnings release, AH or next morning open",
+            "allocation_dollars": 500,
+            "max_loss_dollars": 250,
+            "stop_loss_pct": 50,
+            "take_profit_pct": 200,
+            "triggered_rules": ["earnings_catalyst"],
+            "reasoning": "Analysts expect EPS $1.53 (+72% YoY) on $65.7B revenue. 36 upward EPS revisions. Post-earnings IV crush makes this a calculated bet on a beat.",
+            "confidence": "medium",
         },
         {
             "ticker": "SPY",
             "direction": "put",
             "strike": 680.0,
             "expiry": "2026-02-27",
-            "entry_timing": "If SPY breaks below $682 intraday",
-            "allocation_dollars": 500,
-            "max_loss_dollars": 250,
+            "entry_timing": "If SPY breaks below $682 intraday or NVDA misses",
+            "allocation_dollars": 400,
+            "max_loss_dollars": 200,
             "stop_loss_pct": 50,
             "take_profit_pct": 100,
             "triggered_rules": ["hedge"],
-            "reasoning": "Protective hedge against gap-down acceleration.",
+            "reasoning": "Portfolio hedge against gap-down acceleration. If NVDA disappoints, entire market sells off. Limits downside on the bullish positions above.",
             "confidence": "low",
         },
     ]
     sympathy = [
         {
             "primary_ticker": "NVDA",
-            "primary_catalyst": "Earnings after close",
+            "primary_catalyst": "Earnings after close — EPS $1.53 expected",
             "sympathy_ticker": "AMD",
             "beta": 1.01,
             "direction": "call",
-            "reasoning": "AMD moves 1:1 with NVDA on earnings. If NVDA beats, AMD follows.",
+            "reasoning": "AMD moves 1:1 with NVDA on earnings. If NVDA beats, AMD opens up 5-8% next day. Already deeply oversold.",
+        },
+        {
+            "primary_ticker": "NVDA",
+            "primary_catalyst": "Earnings after close — AI capex commentary",
+            "sympathy_ticker": "AVGO",
+            "beta": 0.85,
+            "direction": "call",
+            "reasoning": "AVGO is a slower follower (0.85 beta) but benefits from positive AI infrastructure commentary. Look for Thursday AM entry.",
         },
     ]
     return recs, sympathy
@@ -1037,54 +1164,60 @@ def run_recommendations(
         triggered = [s for s in signals if s.triggered and s.confidence != "failed"]
         logger.info("  %d rules triggered (excluding failed rules)", len(triggered))
 
-        # Fetch options chains for tickers we might trade
-        options_chains = {}
+        # Scan watchlist for individual stock opportunities
+        watchlist_scans = fetcher.scan_watchlist(watchlist)
+        logger.info("  Scanned %d watchlist tickers", len(watchlist_scans))
+
+        # Build list of tickers to trade: SPY always + watchlist + sympathy plays
         trade_tickers = ["SPY"]
-        # Add watchlist tickers that have sympathy plays with upcoming earnings
-        for earning in research.get("earnings", [])[:3]:
-            ticker = earning.get("ticker", "")
-            if ticker in sympathy_map:
-                for sp in sympathy_map[ticker].get("sympathy_plays", [])[:2]:
+        for scan in watchlist_scans:
+            if scan["ticker"] not in trade_tickers:
+                trade_tickers.append(scan["ticker"])
+        # Add sympathy plays for upcoming earnings
+        for earning in research.get("earnings", [])[:5]:
+            eticker = earning.get("ticker", "")
+            if eticker in sympathy_map:
+                for sp in sympathy_map[eticker].get("sympathy_plays", [])[:2]:
                     if sp["ticker"] not in trade_tickers:
                         trade_tickers.append(sp["ticker"])
+            if eticker and eticker not in trade_tickers:
+                trade_tickers.append(eticker)
 
-        for ticker in trade_tickers[:5]:  # Max 5 to avoid rate limits
+        # Fetch options chains (max 8 tickers)
+        options_chains = {}
+        for ticker in trade_tickers[:8]:
             chain = fetcher.fetch_options_chain(ticker)
             if chain.get("expiry"):
                 options_chains[ticker] = chain
             time.sleep(1)
 
         # Generate recommendations via OpenAI
-        if triggered:
-            try:
-                oai = OpenAIClient()
-                signals_dicts = [s.model_dump() for s in signals]
-                snapshot_dict = snapshot.model_dump()
+        try:
+            oai = OpenAIClient()
+            signals_dicts = [s.model_dump() for s in signals]
+            snapshot_dict = snapshot.model_dump()
 
-                result = oai.generate_trade_recs(
-                    snapshot=snapshot_dict,
-                    signals=signals_dicts,
-                    research=research,
-                    options_chains=options_chains,
-                    sympathy_map=sympathy_map,
-                    max_allocation=max_allocation,
-                    watchlist=watchlist,
-                )
+            result = oai.generate_trade_recs(
+                snapshot=snapshot_dict,
+                signals=signals_dicts,
+                research=research,
+                options_chains=options_chains,
+                sympathy_map=sympathy_map,
+                max_allocation=max_allocation,
+                watchlist=watchlist,
+                watchlist_scans=watchlist_scans,
+            )
 
-                recs = [
-                    TradeRecommendation(**r)
-                    for r in result.get("recommendations", [])
-                ]
-                sympathy_plays = [
-                    SympathyPlay(**s)
-                    for s in result.get("sympathy_plays", [])
-                ]
-            except Exception as e:
-                logger.error("OpenAI trade rec generation failed: %s", e)
-                recs = []
-                sympathy_plays = []
-        else:
-            logger.info("No rules triggered — no trades to recommend.")
+            recs = [
+                TradeRecommendation(**r)
+                for r in result.get("recommendations", [])
+            ]
+            sympathy_plays = [
+                SympathyPlay(**s)
+                for s in result.get("sympathy_plays", [])
+            ]
+        except Exception as e:
+            logger.error("OpenAI trade rec generation failed: %s", e)
             recs = []
             sympathy_plays = []
 

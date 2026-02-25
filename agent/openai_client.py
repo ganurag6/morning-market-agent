@@ -207,6 +207,7 @@ class OpenAIClient:
         sympathy_map: Dict[str, Any],
         max_allocation: float = 5000.0,
         watchlist: Iterable[str] = (),
+        watchlist_scans: list[Dict[str, Any]] | None = None,
     ) -> Dict[str, Any]:
         """Generate specific trade recommendations from rule signals and market data."""
         watchlist_text = ", ".join([w for w in watchlist if w]) or "SPY"
@@ -252,6 +253,19 @@ class OpenAIClient:
   ]
 }"""
 
+        # Build watchlist scan section
+        scan_text = ""
+        if watchlist_scans:
+            scan_text = (
+                f"\nWatchlist Technical Scans ({len(watchlist_scans)} tickers):\n"
+                f"{json.dumps(watchlist_scans, indent=2)}\n\n"
+                "Use the watchlist scans to find individual stock opportunities. "
+                "Tickers with signals like 'deeply_oversold', 'oversold', '5d_selloff', "
+                "'well_below_sma', or 'high_volume' are good candidates for mean-reversion "
+                "call trades. Tickers with 'overbought' or 'momentum_breakout' may be "
+                "put candidates or avoid.\n"
+            )
+
         prompt = (
             "You are a quantitative trading assistant. Generate specific trade "
             "recommendations based ONLY on the provided signals, market data, and "
@@ -265,21 +279,27 @@ class OpenAIClient:
             f"Upcoming Earnings (next 5):\n{json.dumps(earnings_upcoming, indent=2)}\n\n"
             f"Sympathy Map:\n{json.dumps(sympathy_map, indent=2)}\n\n"
             f"Available Options Chains:\n{json.dumps(options_chains, indent=2)}\n\n"
+            f"{scan_text}"
             f"Max Total Allocation: ${max_allocation:.0f}\n\n"
             "Rules for generating recommendations:\n"
-            "1. Only recommend trades supported by at least one triggered signal.\n"
-            "2. Prefer SPY for directional macro plays; use individual names for event-driven plays.\n"
-            "3. Select strikes: ATM to 1% OTM for higher probability.\n"
-            "4. Select expiry: nearest Friday at least 2 days out from the available options.\n"
-            "5. Allocation per trade: $300-$500 (low confidence), $500-$1500 (medium), $1500-$2500 (high).\n"
-            "6. Stop loss: 50% of premium paid.\n"
-            "7. Take profit: 100-200% of premium paid.\n"
-            "8. If 3+ bullish signals, increase allocation. If mixed (long+short), reduce sizes.\n"
-            "9. Always include at least one hedge trade (opposite direction) if total allocation > $1000.\n"
-            "10. Include entry timing: 'at open' for gap plays, '9:45 AM CT' for pullback entries.\n"
-            "11. For sympathy plays, only include if a clear catalyst exists (earnings, major event).\n"
-            "12. If no signals are triggered, return empty recommendations.\n"
-            "13. Maximum 4 trade recommendations.\n\n"
+            "1. ALWAYS include at least 1 SPY trade (call or put based on macro signals).\n"
+            "2. Generate 5 to 7 total trade recommendations — diversify across SPY and individual stocks.\n"
+            "3. Use triggered macro signals (R1-R14) for SPY directional trades.\n"
+            "4. Use watchlist scan data for individual stock picks — oversold stocks with below-SMA "
+            "signals are good call candidates; overbought stocks are put candidates.\n"
+            "5. Use earnings catalysts and sympathy map for event-driven plays.\n"
+            "6. Select strikes: ATM to 1% OTM for higher probability.\n"
+            "7. Select expiry: nearest Friday at least 2 days out from the available options.\n"
+            "8. Allocation per trade: $300-$500 (low confidence), $500-$1500 (medium), $1500-$2500 (high).\n"
+            "9. Stop loss: 50% of premium paid.\n"
+            "10. Take profit: 100-200% of premium paid.\n"
+            "11. If 3+ bullish signals, increase allocation. If mixed (long+short), reduce sizes.\n"
+            "12. Always include at least one hedge trade (opposite direction, e.g. SPY put if mostly bullish).\n"
+            "13. Include entry timing: 'at open' for gap plays, '9:45 AM CT' for pullback entries, "
+            "'after earnings' for catalyst plays.\n"
+            "14. For sympathy plays, only include if a clear catalyst exists (earnings, major event).\n"
+            "15. If no signals are triggered at all, return at least 2 low-confidence watchlist-based trades.\n"
+            "16. Each recommendation MUST have a unique reasoning — explain why THIS specific trade, not generic.\n\n"
             "Return ONLY valid JSON matching this schema (no markdown, no code fences):\n"
             f"{schema}\n"
         )
