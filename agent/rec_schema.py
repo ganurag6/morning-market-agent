@@ -39,6 +39,7 @@ class RuleSignal(BaseModel):
     sample_size: int
     current_value: Optional[float] = None
     threshold: Optional[float] = None
+    target_ticker: Optional[str] = None
     reasoning: str
 
 
@@ -67,6 +68,7 @@ class SympathyPlay(BaseModel):
     sympathy_ticker: str
     beta: float
     direction: Literal["call", "put"]
+    entry_timing: Optional[str] = None
     reasoning: str
 
 
@@ -78,7 +80,7 @@ class PortfolioSummary(BaseModel):
     num_trades: int
     net_directional_bias: Literal["bullish", "bearish", "neutral"]
     rules_triggered_count: int
-    rules_total_count: int = 14
+    rules_total_count: int = 17
 
 
 class RecommendationPack(BaseModel):
@@ -91,6 +93,7 @@ class RecommendationPack(BaseModel):
     recommendations: List[TradeRecommendation] = Field(default_factory=list)
     sympathy_plays: List[SympathyPlay] = Field(default_factory=list)
     portfolio_summary: PortfolioSummary
+    is_intraday_rerun: bool = False
     disclaimer: str = (
         "DISCLAIMER: These are algorithmically generated signals based on "
         "backtested rules with limited sample sizes. Past performance does not "

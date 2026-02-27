@@ -206,8 +206,8 @@ class MarketDataFetcher:
                 hist = hist.droplevel("Ticker", axis=1)
             current_price = float(hist["Close"].iloc[-1]) if not hist.empty else 0
 
-            # Filter to strikes within 3% of current price
-            strike_range = current_price * 0.03
+            # Filter to strikes within 1.5% of current price
+            strike_range = current_price * 0.015
 
             calls_df = chain.calls
             calls_near = calls_df[
@@ -239,20 +239,37 @@ class MarketDataFetcher:
                     "openInterest": int(row.get("openInterest", 0)),
                 })
 
+            # Preferred strikes: nearest ATM
+            preferred_call = min(
+                (c["strike"] for c in calls_list if c["strike"] >= current_price),
+                default=current_price,
+            )
+            preferred_put = max(
+                (p["strike"] for p in puts_list if p["strike"] <= current_price),
+                default=current_price,
+            )
+
             return {
                 "ticker": ticker,
                 "current_price": round(current_price, 2),
                 "expiry": expiry,
                 "calls": calls_list[:10],
                 "puts": puts_list[:10],
+                "preferred_call_strike": round(preferred_call, 2),
+                "preferred_put_strike": round(preferred_put, 2),
             }
         except Exception as e:
             logger.warning("Failed to fetch options for %s: %s", ticker, e)
             return {"ticker": ticker, "expiry": None, "calls": [], "puts": []}
 
-    def scan_watchlist(self, tickers: List[str]) -> List[Dict[str, Any]]:
+    def scan_watchlist(
+        self,
+        tickers: List[str],
+        earnings_tickers: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
         """Scan watchlist tickers for technical setups (oversold, momentum, etc.)."""
         logger.info("Scanning watchlist: %s", tickers)
+        earnings_tickers = earnings_tickers or []
         scans = []
         for ticker_str in tickers:
             try:
@@ -289,24 +306,54 @@ class MarketDataFetcher:
                 avg_vol = float(hist["Volume"].rolling(20).mean().iloc[-1])
                 vol_ratio = round(float(hist["Volume"].iloc[-1]) / avg_vol, 2) if avg_vol > 0 else 1.0
 
-                # Determine signal
+                # 20-day low for near_support
+                low_20d = float(hist["Low"].rolling(20).min().iloc[-1])
+
+                # Determine signals with weights
                 signals = []
-                if change_20d is not None and change_20d < -10:
+                signal_score = 0.0
+
+                # Extreme oversold: 5d < -5% AND 20d < -10%
+                if (change_5d is not None and change_5d < -5
+                        and change_20d is not None and change_20d < -10):
+                    signals.append("extreme_oversold")
+                    signal_score += 3.0
+                elif change_20d is not None and change_20d < -10:
                     signals.append("deeply_oversold")
+                    signal_score += 2.0
                 elif change_20d is not None and change_20d < -5:
                     signals.append("oversold")
+                    signal_score += 1.5
+
+                # Near support: within 1% of 20-day low
+                if low_20d > 0 and (close - low_20d) / low_20d * 100 < 1.0:
+                    signals.append("near_support")
+                    signal_score += 1.5
+
                 if dist_sma < -3:
                     signals.append("well_below_sma")
-                elif dist_sma < 0:
+                    signal_score += 2.0
+                elif dist_sma < -1:
                     signals.append("below_sma")
+                    signal_score += 1.0
+
                 if change_5d is not None and change_5d < -3:
                     signals.append("5d_selloff")
+                    signal_score += 1.0
                 if day_change_pct > 3:
                     signals.append("momentum_breakout")
+                    signal_score += 1.0
                 if vol_ratio > 1.5:
                     signals.append("high_volume")
+                    signal_score += 1.0
                 if change_20d is not None and change_20d > 10:
                     signals.append("overbought")
+                    signal_score += 0.5
+
+                # Earnings soon cross-reference
+                if ticker_str in earnings_tickers:
+                    signals.append("earnings_soon")
+                    signal_score += 1.5
 
                 scans.append({
                     "ticker": ticker_str,
@@ -317,14 +364,15 @@ class MarketDataFetcher:
                     "distance_from_20sma_pct": dist_sma,
                     "volume_ratio": vol_ratio,
                     "signals": signals,
+                    "signal_score": round(signal_score, 1),
                 })
                 time.sleep(0.5)
             except Exception as e:
                 logger.warning("Failed to scan %s: %s", ticker_str, e)
                 continue
 
-        # Sort: most interesting (most signals) first
-        scans.sort(key=lambda x: len(x.get("signals", [])), reverse=True)
+        # Sort: highest signal quality score first
+        scans.sort(key=lambda x: x.get("signal_score", 0), reverse=True)
         return scans
 
     def get_market_snapshot(self, as_of: str) -> MarketSnapshot:
@@ -359,7 +407,7 @@ class MarketDataFetcher:
 # Rule Engine
 # ---------------------------------------------------------------------------
 class RuleEngine:
-    """Evaluate the 14 backtested trading rules against current conditions."""
+    """Evaluate the 17 backtested trading rules against current conditions."""
 
     def __init__(self, rules_path: Path = RULES_PATH):
         with open(rules_path) as f:
@@ -370,6 +418,7 @@ class RuleEngine:
         snapshot: MarketSnapshot,
         research: Dict[str, Any],
         history_df: Optional[pd.DataFrame] = None,
+        watchlist_scans: Optional[List[Dict[str, Any]]] = None,
     ) -> List[RuleSignal]:
         """Evaluate all rules and return list of RuleSignal."""
         signals = []
@@ -377,8 +426,11 @@ class RuleEngine:
             ctype = rule.get("condition_type", "")
             evaluator = self._get_evaluator(ctype)
             if evaluator:
-                signal = evaluator(rule, snapshot, research, history_df)
-                signals.append(signal)
+                signal = evaluator(rule, snapshot, research, history_df, watchlist_scans)
+                if isinstance(signal, list):
+                    signals.extend(signal)
+                else:
+                    signals.append(signal)
             else:
                 signals.append(
                     RuleSignal(
@@ -411,10 +463,13 @@ class RuleEngine:
             "rally_short": self._eval_rally_short,
             "low_yield_high_vix": self._eval_low_yield_high_vix,
             "dxy_up_vix_up": self._eval_dxy_up_vix_up,
+            "sell_the_news": self._eval_sell_the_news,
+            "megacap_earnings_vol": self._eval_megacap_earnings_vol,
+            "all_bullish_contrarian": self._eval_all_bullish_contrarian,
         }
         return dispatch.get(condition_type)
 
-    def _eval_spy_prev_day_drop(self, rule, snapshot, research, history):
+    def _eval_spy_prev_day_drop(self, rule, snapshot, research, history, watchlist_scans):
         """R1: SPY dropped >1% on a macro event day yesterday."""
         prev_change = snapshot.spy_premarket_change_pct
         # Use yesterday's actual change (premarket_change is proxy for gap)
@@ -439,7 +494,7 @@ class RuleEngine:
             ),
         )
 
-    def _eval_inflation_surprise(self, rule, snapshot, research, history):
+    def _eval_inflation_surprise(self, rule, snapshot, research, history, watchlist_scans):
         """R2: Positive surprise on CPI/PPI."""
         events = research.get("events", [])
         today_str = research.get("date", "")
@@ -475,7 +530,7 @@ class RuleEngine:
             reasoning="No CPI/PPI release scheduled today.",
         )
 
-    def _eval_nfp_beat(self, rule, snapshot, research, history):
+    def _eval_nfp_beat(self, rule, snapshot, research, history, watchlist_scans):
         """R3: NFP beat → Short."""
         events = research.get("events", [])
         today_str = research.get("date", "")
@@ -509,7 +564,7 @@ class RuleEngine:
             reasoning="No NFP release scheduled today.",
         )
 
-    def _eval_vix_level(self, rule, snapshot, research, history):
+    def _eval_vix_level(self, rule, snapshot, research, history, watchlist_scans):
         """R4: VIX >20 → Buy. Best performing rule (100% win, 7/7)."""
         val = snapshot.vix
         triggered = val > rule["threshold"]
@@ -530,7 +585,7 @@ class RuleEngine:
             ),
         )
 
-    def _eval_fomc_hold(self, rule, snapshot, research, history):
+    def _eval_fomc_hold(self, rule, snapshot, research, history, watchlist_scans):
         """R5: FOMC holds rates → Buy."""
         events = research.get("events", [])
         today_str = research.get("date", "")
@@ -564,7 +619,7 @@ class RuleEngine:
             reasoning="No FOMC decision scheduled today.",
         )
 
-    def _eval_ism_contraction(self, rule, snapshot, research, history):
+    def _eval_ism_contraction(self, rule, snapshot, research, history, watchlist_scans):
         """R6: ISM Mfg <50 → Buy."""
         events = research.get("events", [])
         today_str = research.get("date", "")
@@ -598,7 +653,7 @@ class RuleEngine:
             reasoning="No ISM Manufacturing release scheduled today.",
         )
 
-    def _eval_yield_drop(self, rule, snapshot, research, history):
+    def _eval_yield_drop(self, rule, snapshot, research, history, watchlist_scans):
         """R7: 10Y yield drops >5bps → Buy."""
         val = snapshot.us10y_change_bps
         if val is None:
@@ -630,7 +685,7 @@ class RuleEngine:
             ),
         )
 
-    def _eval_gap_down(self, rule, snapshot, research, history):
+    def _eval_gap_down(self, rule, snapshot, research, history, watchlist_scans):
         """R8: Gap down >0.3% → Buy the dip."""
         val = snapshot.gap_pct
         triggered = val < rule["threshold"]
@@ -651,7 +706,7 @@ class RuleEngine:
             ),
         )
 
-    def _eval_below_sma(self, rule, snapshot, research, history):
+    def _eval_below_sma(self, rule, snapshot, research, history, watchlist_scans):
         """R9: SPY below 20-day SMA → Buy."""
         val = snapshot.spy_distance_from_20sma_pct
         if val is None:
@@ -683,7 +738,7 @@ class RuleEngine:
             ),
         )
 
-    def _eval_volume_spike(self, rule, snapshot, research, history):
+    def _eval_volume_spike(self, rule, snapshot, research, history, watchlist_scans):
         """R10: Volume >1.3x average → Buy."""
         val = snapshot.spy_volume_ratio
         if val is None:
@@ -715,7 +770,7 @@ class RuleEngine:
             ),
         )
 
-    def _eval_consecutive_down(self, rule, snapshot, research, history):
+    def _eval_consecutive_down(self, rule, snapshot, research, history, watchlist_scans):
         """R11: 5-day change <-2% → Buy."""
         val = snapshot.spy_5d_change_pct
         if val is None:
@@ -747,7 +802,7 @@ class RuleEngine:
             ),
         )
 
-    def _eval_rally_short(self, rule, snapshot, research, history):
+    def _eval_rally_short(self, rule, snapshot, research, history, watchlist_scans):
         """R12: Rally >1% → Short. WARNING: FAILED rule (33% win rate)."""
         val = snapshot.spy_premarket_change_pct
         triggered = val > rule["threshold"]
@@ -769,7 +824,7 @@ class RuleEngine:
             ),
         )
 
-    def _eval_low_yield_high_vix(self, rule, snapshot, research, history):
+    def _eval_low_yield_high_vix(self, rule, snapshot, research, history, watchlist_scans):
         """R13: Low yield + high VIX → Buy."""
         vix_val = snapshot.vix
         yield_change = snapshot.us10y_change_bps
@@ -806,7 +861,7 @@ class RuleEngine:
             ),
         )
 
-    def _eval_dxy_up_vix_up(self, rule, snapshot, research, history):
+    def _eval_dxy_up_vix_up(self, rule, snapshot, research, history, watchlist_scans):
         """R14: DXY up + VIX up → Buy the fear."""
         dxy_change = snapshot.dxy_change_pct
         vix_change = snapshot.vix_change
@@ -839,6 +894,206 @@ class RuleEngine:
             ),
         )
 
+    def _eval_sell_the_news(self, rule, snapshot, research, history, watchlist_scans):
+        """R15: Sell-the-News Post-Earnings Fade.
+
+        Trigger: Ticker reported earnings yesterday after close (or today before
+        open), rallied >5% in the 5 days before earnings, and is now trading
+        flat or down.  Returns a list of RuleSignal (one per matching ticker).
+        """
+        signals: list[RuleSignal] = []
+        if not watchlist_scans:
+            signals.append(RuleSignal(
+                rule_id=rule["id"],
+                rule_name=rule["name"],
+                triggered=False,
+                direction="short",
+                confidence=rule.get("confidence", "medium"),
+                win_rate=rule.get("win_rate", 0.65),
+                sample_size=rule.get("sample_size", 0),
+                reasoning="No watchlist scan data available for sell-the-news evaluation.",
+            ))
+            return signals
+
+        rally_thresh = rule.get("threshold_pre_earnings_rally_pct", 5.0)
+        post_thresh = rule.get("threshold_post_earnings_change_pct", 0.0)
+        earnings_list = research.get("earnings", [])
+
+        # Build lookup: ticker → earnings info
+        earnings_by_ticker = {}
+        for e in earnings_list:
+            t = e.get("ticker", "")
+            if t:
+                earnings_by_ticker[t] = e
+
+        for scan in watchlist_scans:
+            ticker = scan.get("ticker", "")
+            if ticker not in earnings_by_ticker:
+                continue
+
+            earning = earnings_by_ticker[ticker]
+            time_hint = (earning.get("time_hint") or "").lower()
+
+            # We look for stocks that just reported: "after close" yesterday
+            # or "before open" today.  The scan data reflects current-day prices.
+            is_post_earnings = "after" in time_hint or "before" in time_hint
+
+            if not is_post_earnings:
+                continue
+
+            change_5d = scan.get("change_5d_pct")
+            day_change = scan.get("day_change_pct", 0.0)
+
+            # Check: rallied >5% in prior 5 days AND now flat/down
+            pre_rally = change_5d is not None and change_5d > rally_thresh
+            post_fade = day_change <= post_thresh
+
+            triggered = pre_rally and post_fade
+
+            signals.append(RuleSignal(
+                rule_id=rule["id"],
+                rule_name=rule["name"],
+                triggered=triggered,
+                direction="short",
+                confidence=rule.get("confidence", "medium"),
+                win_rate=rule.get("win_rate", 0.65),
+                sample_size=rule.get("sample_size", 0),
+                current_value=day_change,
+                target_ticker=ticker,
+                reasoning=(
+                    f"{ticker}: 5d rally {change_5d:+.1f}% (need >{rally_thresh}%), "
+                    f"post-earnings {day_change:+.1f}% (need <={post_thresh}%). "
+                    + (f"SELL-THE-NEWS detected — classic fade pattern on {ticker}. Consider puts."
+                       if triggered
+                       else f"Conditions not met for sell-the-news on {ticker}.")
+                ),
+            ))
+
+        if not signals:
+            signals.append(RuleSignal(
+                rule_id=rule["id"],
+                rule_name=rule["name"],
+                triggered=False,
+                direction="short",
+                confidence=rule.get("confidence", "medium"),
+                win_rate=rule.get("win_rate", 0.65),
+                sample_size=rule.get("sample_size", 0),
+                reasoning="No post-earnings tickers found in watchlist scans.",
+            ))
+
+        return signals
+
+    def _eval_megacap_earnings_vol(self, rule, snapshot, research, history, watchlist_scans):
+        """R16: Mega-Cap Earnings Vol Event.
+
+        Case A: Mega-cap just reported with muted reaction (<1% move on a beat).
+        Case B: Mega-cap reports today after close — binary event warning.
+        Returns a list of RuleSignal (one per matching ticker).
+        """
+        signals: list[RuleSignal] = []
+        mega_caps = rule.get("mega_cap_list", [
+            "NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA",
+        ])
+        premarket_thresh = rule.get("threshold_premarket_move_pct", 1.0)
+        earnings_list = research.get("earnings", [])
+
+        earnings_by_ticker = {}
+        for e in earnings_list:
+            t = e.get("ticker", "")
+            if t:
+                earnings_by_ticker[t] = e
+
+        scans_by_ticker = {}
+        if watchlist_scans:
+            for s in watchlist_scans:
+                scans_by_ticker[s.get("ticker", "")] = s
+
+        for ticker in mega_caps:
+            if ticker not in earnings_by_ticker:
+                continue
+
+            earning = earnings_by_ticker[ticker]
+            time_hint = (earning.get("time_hint") or "").lower()
+            scan = scans_by_ticker.get(ticker, {})
+            day_change = scan.get("day_change_pct", 0.0)
+
+            # Case A: Just reported (after close yesterday or before open today)
+            # and reaction is muted (<1% absolute move)
+            if "after" in time_hint or "before" in time_hint:
+                muted = abs(day_change) < premarket_thresh
+                if muted:
+                    signals.append(RuleSignal(
+                        rule_id=rule["id"],
+                        rule_name=rule["name"],
+                        triggered=True,
+                        direction="short",
+                        confidence=rule.get("confidence", "medium"),
+                        win_rate=rule.get("win_rate", 0.60),
+                        sample_size=rule.get("sample_size", 0),
+                        current_value=day_change,
+                        target_ticker=ticker,
+                        reasoning=(
+                            f"{ticker} reported earnings — muted reaction "
+                            f"({day_change:+.1f}%, threshold <{premarket_thresh}%). "
+                            "Market not rewarding the beat. Reduce long exposure."
+                        ),
+                    ))
+                    continue
+
+            # Case B: Reports today after close — upcoming binary event
+            if "after" in time_hint:
+                signals.append(RuleSignal(
+                    rule_id=rule["id"],
+                    rule_name=rule["name"],
+                    triggered=True,
+                    direction="short",
+                    confidence=rule.get("confidence", "medium"),
+                    win_rate=rule.get("win_rate", 0.60),
+                    sample_size=rule.get("sample_size", 0),
+                    current_value=None,
+                    target_ticker=ticker,
+                    reasoning=(
+                        f"{ticker} reports earnings after close today. "
+                        "Binary vol event — reduce sizing on {ticker} positions "
+                        "and consider hedges."
+                    ),
+                ))
+
+        if not signals:
+            signals.append(RuleSignal(
+                rule_id=rule["id"],
+                rule_name=rule["name"],
+                triggered=False,
+                direction="short",
+                confidence=rule.get("confidence", "medium"),
+                win_rate=rule.get("win_rate", 0.60),
+                sample_size=rule.get("sample_size", 0),
+                reasoning="No mega-cap earnings events detected.",
+            ))
+
+        return signals
+
+    def _eval_all_bullish_contrarian(self, rule, snapshot, research, history, watchlist_scans):
+        """R17: All-Bullish Contrarian Warning (stub).
+
+        Real logic runs post-recommendation in _validate_and_fix_recommendations().
+        This stub always returns not-triggered.
+        """
+        return RuleSignal(
+            rule_id=rule["id"],
+            rule_name=rule["name"],
+            triggered=False,
+            direction="neutral",
+            confidence=rule.get("confidence", "medium"),
+            win_rate=rule.get("win_rate", 0.50),
+            sample_size=rule.get("sample_size", 0),
+            reasoning=(
+                "Contrarian check deferred to post-recommendation validation. "
+                "If all scan signals are bullish AND all recommendations are calls, "
+                "a mandatory 20% hedge will be enforced."
+            ),
+        )
+
 
 # ---------------------------------------------------------------------------
 # Markdown brief builder
@@ -846,13 +1101,19 @@ class RuleEngine:
 def build_recommendation_brief(rec_pack: RecommendationPack) -> str:
     """Generate the markdown text for the recommendations email section."""
     snap = rec_pack.market_snapshot
+    run_label = "INTRADAY RE-RUN" if rec_pack.is_intraday_rerun else "Pre-Market"
     lines = [
         f"## Trading Recommendations - {rec_pack.date}",
+    ]
+    if rec_pack.is_intraday_rerun:
+        lines.append("")
+        lines.append("> **INTRADAY RE-RUN** — Updated signals based on mid-day market conditions.")
+    lines.extend([
         "",
-        f"### Market Snapshot (Pre-Market {snap.as_of})",
+        f"### Market Snapshot ({run_label} {snap.as_of})",
         "| Metric | Value | Signal |",
         "|--------|-------|--------|",
-    ]
+    ])
 
     # SPY
     spy_signal = "Gap down" if snap.gap_pct < -0.2 else ("Gap up" if snap.gap_pct > 0.2 else "Flat")
@@ -885,17 +1146,22 @@ def build_recommendation_brief(rec_pack: RecommendationPack) -> str:
     failed_triggers = [s for s in triggered if s.confidence == "failed"]
     active_triggers = [s for s in triggered if s.confidence != "failed"]
 
+    # Split into SPY-level and per-ticker signals
+    spy_triggers = [s for s in active_triggers if s.target_ticker is None]
+    ticker_triggers = [s for s in active_triggers if s.target_ticker is not None]
+
+    total_rules = rec_pack.portfolio_summary.rules_total_count
     lines.extend([
         "",
-        f"### Active Rule Signals ({len(active_triggers)} of 14 triggered)",
+        f"### Active Rule Signals ({len(active_triggers)} of {total_rules} triggered)",
     ])
 
-    if active_triggers:
+    if spy_triggers:
         lines.extend([
             "| Rule | Signal | Confidence | Detail |",
             "|------|--------|------------|--------|",
         ])
-        for s in active_triggers:
+        for s in spy_triggers:
             direction = "BUY" if s.direction == "long" else "SHORT"
             val_str = f"{s.current_value}" if s.current_value is not None else ""
             thresh_str = f" (threshold: {s.threshold})" if s.threshold is not None else ""
@@ -904,8 +1170,19 @@ def build_recommendation_brief(rec_pack: RecommendationPack) -> str:
                 f"{s.confidence.upper()} | {val_str}{thresh_str} — "
                 f"{s.win_rate*100:.0f}% win rate, {s.sample_size} trades |"
             )
-    else:
+    elif not ticker_triggers:
         lines.append("_No rules triggered today._")
+
+    # Per-ticker signals (R15/R16)
+    if ticker_triggers:
+        lines.extend(["", "**Per-Ticker Signals:**"])
+        for s in ticker_triggers:
+            direction = "BUY" if s.direction == "long" else "SHORT"
+            ticker_label = f"[{s.target_ticker}]" if s.target_ticker else ""
+            lines.append(
+                f"- **{s.rule_id} {s.rule_name}** {ticker_label}: "
+                f"{direction} ({s.confidence.upper()}) — {s.reasoning}"
+            )
 
     if failed_triggers:
         lines.extend(["", "**Counter-signals (failed rules, for reference only):**"])
@@ -915,11 +1192,13 @@ def build_recommendation_brief(rec_pack: RecommendationPack) -> str:
     # Confluence summary
     long_count = sum(1 for s in active_triggers if s.direction == "long")
     short_count = sum(1 for s in active_triggers if s.direction == "short")
+    neutral_count = sum(1 for s in active_triggers if s.direction == "neutral")
     if active_triggers:
-        lines.extend([
-            "",
-            f"**Confluence: {long_count} bullish, {short_count} bearish signals.**",
-        ])
+        confluence = f"**Confluence: {long_count} bullish, {short_count} bearish"
+        if neutral_count:
+            confluence += f", {neutral_count} neutral"
+        confluence += " signals.**"
+        lines.extend(["", confluence])
 
     # Trade recommendations
     lines.extend(["", "### Trade Recommendations"])
@@ -946,9 +1225,10 @@ def build_recommendation_brief(rec_pack: RecommendationPack) -> str:
         lines.extend(["", "### Sympathy Plays"])
         for sp in rec_pack.sympathy_plays:
             direction_str = "calls" if sp.direction == "call" else "puts"
+            timing_str = f" [{sp.entry_timing}]" if sp.entry_timing else ""
             lines.append(
                 f"- **{sp.sympathy_ticker}** (beta {sp.beta:.2f} to {sp.primary_ticker}): "
-                f"{sp.reasoning} — consider {direction_str}"
+                f"{sp.reasoning} — consider {direction_str}{timing_str}"
             )
 
     # Portfolio summary
@@ -969,6 +1249,139 @@ def build_recommendation_brief(rec_pack: RecommendationPack) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Post-processing validation
+# ---------------------------------------------------------------------------
+def _validate_and_fix_recommendations(
+    recs: List[TradeRecommendation],
+    options_chains: Dict[str, Any],
+    max_allocation: float,
+    watchlist_scans: Optional[List[Dict[str, Any]]] = None,
+    active_signals: Optional[List[RuleSignal]] = None,
+) -> List[TradeRecommendation]:
+    """Post-process recommendations to enforce hedge, strike, and allocation rules."""
+    if not recs:
+        return recs
+
+    # --- R17: All-Bullish Contrarian Warning ---
+    r17_triggered = False
+    if watchlist_scans and active_signals:
+        # Check if all scan signals are bullish (oversold/below_sma/near_support)
+        bullish_scan_signals = {
+            "extreme_oversold", "deeply_oversold", "oversold",
+            "below_sma", "well_below_sma", "near_support",
+            "5d_selloff", "earnings_soon",
+        }
+        all_scans_bullish = all(
+            any(sig in bullish_scan_signals for sig in scan.get("signals", []))
+            for scan in watchlist_scans
+            if scan.get("signals")
+        )
+        # Check if all recommendations are calls (no puts)
+        all_calls = all(r.direction == "call" for r in recs)
+
+        r17_triggered = all_scans_bullish and all_calls and len(recs) >= 2
+        if r17_triggered:
+            logger.warning(
+                "R17 CONTRARIAN WARNING: All scan signals bullish + all recs are calls. "
+                "Enforcing 20%% hedge."
+            )
+
+    # --- Hedge enforcement ---
+    directions = {r.direction for r in recs}
+    if len(directions) == 1:
+        # All same direction — inject hedge
+        hedge_direction = "put" if "call" in directions else "call"
+        # R17: bump hedge to 20% if contrarian warning triggered
+        hedge_pct = 0.20 if r17_triggered else 0.175
+        hedge_alloc = round(max_allocation * hedge_pct)
+        hedge_max_loss = round(hedge_alloc * 0.5)
+
+        # Use SPY options chain for strike if available
+        spy_chain = options_chains.get("SPY", {})
+        if hedge_direction == "put":
+            hedge_strike = spy_chain.get("preferred_put_strike")
+        else:
+            hedge_strike = spy_chain.get("preferred_call_strike")
+        hedge_expiry = spy_chain.get("expiry")
+
+        hedge_rules = ["hedge"]
+        hedge_reasoning = (
+            f"MANDATORY hedge trade. All other positions are "
+            f"{'bullish' if hedge_direction == 'put' else 'bearish'}. "
+            f"This {hedge_direction} limits downside if thesis is wrong."
+        )
+        if r17_triggered:
+            hedge_rules.append("R17")
+            hedge_reasoning = (
+                "CONTRARIAN WARNING (R17): All watchlist scans show bullish signals "
+                "AND all recommendations are calls. One-directional positioning detected. "
+                f"Mandatory {hedge_pct*100:.0f}% hedge enforced. "
+                f"This {hedge_direction} protects against consensus-is-wrong risk."
+            )
+
+        hedge = TradeRecommendation(
+            ticker="SPY",
+            direction=hedge_direction,
+            strike=hedge_strike,
+            expiry=hedge_expiry,
+            entry_timing="At open — portfolio hedge",
+            allocation_dollars=hedge_alloc,
+            max_loss_dollars=hedge_max_loss,
+            stop_loss_pct=50.0,
+            take_profit_pct=100.0,
+            triggered_rules=hedge_rules,
+            reasoning=hedge_reasoning,
+            confidence="low",
+        )
+        recs.append(hedge)
+
+    # --- Strike validation: snap to nearest in options chain ---
+    for rec in recs:
+        chain = options_chains.get(rec.ticker, {})
+        if not chain or rec.strike is None:
+            continue
+        strike_list = (
+            [c["strike"] for c in chain.get("calls", [])]
+            if rec.direction == "call"
+            else [p["strike"] for p in chain.get("puts", [])]
+        )
+        if strike_list:
+            nearest = min(strike_list, key=lambda s: abs(s - rec.strike))
+            if nearest != rec.strike:
+                logger.info(
+                    "Snapping %s %s strike %.2f → %.2f",
+                    rec.ticker, rec.direction, rec.strike, nearest,
+                )
+                rec.strike = nearest
+
+    # --- Allocation cap: no single trade > 35% ---
+    cap = max_allocation * 0.35
+    for rec in recs:
+        if rec.allocation_dollars > cap:
+            logger.info(
+                "Capping %s allocation $%.0f → $%.0f (35%% max)",
+                rec.ticker, rec.allocation_dollars, cap,
+            )
+            ratio = cap / rec.allocation_dollars
+            rec.allocation_dollars = round(cap)
+            rec.max_loss_dollars = round(rec.max_loss_dollars * ratio)
+
+    # --- Total cap: scale down if exceeds max_allocation ---
+    total = sum(r.allocation_dollars for r in recs)
+    if total > max_allocation:
+        scale = max_allocation / total
+        logger.info(
+            "Scaling all allocations by %.2f (total $%.0f > max $%.0f)",
+            scale, total, max_allocation,
+        )
+        for rec in recs:
+            rec.allocation_dollars = round(rec.allocation_dollars * scale)
+            rec.max_loss_dollars = round(rec.max_loss_dollars * scale)
+
+    return recs
+
+
+# ---------------------------------------------------------------------------
 # Mock data for testing without API keys
 # ---------------------------------------------------------------------------
 def _build_mock_snapshot(as_of: str) -> MarketSnapshot:
@@ -981,7 +1394,7 @@ def _build_mock_snapshot(as_of: str) -> MarketSnapshot:
         spy_20d_change_pct=-3.20,
         spy_distance_from_20sma_pct=-0.85,
         spy_volume_ratio=1.15,
-        vix=20.50,
+        vix=19.50,
         vix_prev_close=19.55,
         vix_change=0.95,
         us10y_yield=4.085,
@@ -1072,6 +1485,7 @@ def _build_mock_recommendations() -> tuple[list[dict], list[dict]]:
             "sympathy_ticker": "AMD",
             "beta": 1.01,
             "direction": "call",
+            "entry_timing": "NEXT DAY ONLY",
             "reasoning": "AMD moves 1:1 with NVDA on earnings. If NVDA beats, AMD opens up 5-8% next day. Already deeply oversold.",
         },
         {
@@ -1080,6 +1494,7 @@ def _build_mock_recommendations() -> tuple[list[dict], list[dict]]:
             "sympathy_ticker": "AVGO",
             "beta": 0.85,
             "direction": "call",
+            "entry_timing": "NEXT DAY ONLY",
             "reasoning": "AVGO is a slower follower (0.85 beta) but benefits from positive AI infrastructure commentary. Look for Thursday AM entry.",
         },
     ]
@@ -1106,6 +1521,7 @@ def run_recommendations(
     out_dir: str | Path,
     mock_mode: bool = False,
     max_allocation: float = 5000.0,
+    is_intraday_rerun: bool = False,
 ) -> RecommendationResult:
     """Full recommendation pipeline."""
     tzinfo = ZoneInfo(tz)
@@ -1142,11 +1558,15 @@ def run_recommendations(
         with open(SYMPATHY_PATH) as f:
             sympathy_map = json.load(f)
 
+    options_chains: Dict[str, Any] = {}
+
+    watchlist_scans: List[Dict[str, Any]] = []
+
     if mock_mode or not os.getenv("OPENAI_API_KEY"):
         logger.info("Running recommendations in MOCK mode.")
         snapshot = _build_mock_snapshot(as_of)
         engine = RuleEngine()
-        signals = engine.evaluate_all(snapshot, research, history_df)
+        signals = engine.evaluate_all(snapshot, research, history_df, watchlist_scans=None)
 
         mock_recs, mock_sympathy = _build_mock_recommendations()
         recs = [TradeRecommendation(**r) for r in mock_recs]
@@ -1157,16 +1577,24 @@ def run_recommendations(
         fetcher = MarketDataFetcher()
         snapshot = fetcher.get_market_snapshot(as_of)
 
+        # Build earnings tickers list for cross-referencing
+        earnings_tickers = [
+            e.get("ticker", "") for e in research.get("earnings", []) if e.get("ticker")
+        ]
+
+        # Scan watchlist BEFORE rule evaluation (R15/R16 need scan data)
+        watchlist_scans = fetcher.scan_watchlist(watchlist, earnings_tickers=earnings_tickers)
+        logger.info("  Scanned %d watchlist tickers", len(watchlist_scans))
+
+        # Evaluate trading rules (including R15/R16 which use watchlist_scans)
         logger.info("Evaluating trading rules...")
         engine = RuleEngine()
-        signals = engine.evaluate_all(snapshot, research, history_df)
+        signals = engine.evaluate_all(
+            snapshot, research, history_df, watchlist_scans=watchlist_scans,
+        )
 
         triggered = [s for s in signals if s.triggered and s.confidence != "failed"]
         logger.info("  %d rules triggered (excluding failed rules)", len(triggered))
-
-        # Scan watchlist for individual stock opportunities
-        watchlist_scans = fetcher.scan_watchlist(watchlist)
-        logger.info("  Scanned %d watchlist tickers", len(watchlist_scans))
 
         # Build list of tickers to trade: SPY always + watchlist + sympathy plays
         trade_tickers = ["SPY"]
@@ -1191,6 +1619,18 @@ def run_recommendations(
                 options_chains[ticker] = chain
             time.sleep(1)
 
+        # Tag earnings with timing info for sympathy plays
+        earnings_timing = {}
+        for earning in research.get("earnings", []):
+            eticker = earning.get("ticker", "")
+            time_hint = (earning.get("time_hint") or "").lower()
+            if "after" in time_hint:
+                earnings_timing[eticker] = "NEXT DAY ONLY"
+            elif "before" in time_hint:
+                earnings_timing[eticker] = "Same day"
+            else:
+                earnings_timing[eticker] = "Unknown — verify timing"
+
         # Generate recommendations via OpenAI
         try:
             oai = OpenAIClient()
@@ -1206,6 +1646,7 @@ def run_recommendations(
                 max_allocation=max_allocation,
                 watchlist=watchlist,
                 watchlist_scans=watchlist_scans,
+                earnings_timing=earnings_timing,
             )
 
             recs = [
@@ -1220,6 +1661,13 @@ def run_recommendations(
             logger.error("OpenAI trade rec generation failed: %s", e)
             recs = []
             sympathy_plays = []
+
+    # Post-process: validate and fix recommendations (R17 needs scans + signals)
+    recs = _validate_and_fix_recommendations(
+        recs, options_chains, max_allocation,
+        watchlist_scans=watchlist_scans or None,
+        active_signals=signals,
+    )
 
     # Build portfolio summary
     total_alloc = sum(r.allocation_dollars for r in recs)
@@ -1252,11 +1700,13 @@ def run_recommendations(
         recommendations=recs,
         sympathy_plays=sympathy_plays,
         portfolio_summary=portfolio_summary,
+        is_intraday_rerun=is_intraday_rerun,
     )
 
-    # Write outputs
-    rec_json_path = output_dir / "recommendations.json"
-    rec_brief_path = output_dir / "recommendations.md"
+    # Write outputs — intraday re-runs write to separate files
+    suffix = "_intraday" if is_intraday_rerun else ""
+    rec_json_path = output_dir / f"recommendations{suffix}.json"
+    rec_brief_path = output_dir / f"recommendations{suffix}.md"
 
     with open(rec_json_path, "w") as f:
         json.dump(rec_pack.model_dump(), f, indent=2, default=str)
@@ -1272,7 +1722,7 @@ def run_recommendations(
     # Print summary
     print(f"\n{'=' * 60}")
     print(f"  Recommendations: {rec_json_path}")
-    print(f"  Rules triggered: {len(triggered_signals)}/14")
+    print(f"  Rules triggered: {len(triggered_signals)}/{portfolio_summary.rules_total_count}")
     print(f"  Trades:          {len(recs)}")
     print(f"  Total allocation:${total_alloc:,.0f}")
     print(f"  Max risk:        ${max_risk:,.0f}")

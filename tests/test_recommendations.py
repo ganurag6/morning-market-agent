@@ -19,6 +19,7 @@ from agent.recommendations import (
     build_recommendation_brief,
     _build_mock_snapshot,
     _build_mock_recommendations,
+    _validate_and_fix_recommendations,
 )
 
 
@@ -187,11 +188,11 @@ class TestRuleEngine:
         r7 = next(s for s in signals if s.rule_id == "R7")
         assert r7.triggered is True  # -5.5 bps < -5.0 threshold
 
-    def test_r11_consecutive_down_no_trigger(self, engine, snapshot_high_vix, research_empty):
-        # -1.80% is not below -2.0% threshold
+    def test_r11_consecutive_down_triggers(self, engine, snapshot_high_vix, research_empty):
+        # -1.80% is below -1.5% threshold (loosened from -2.0%)
         signals = engine.evaluate_all(snapshot_high_vix, research_empty)
         r11 = next(s for s in signals if s.rule_id == "R11")
-        assert r11.triggered is False
+        assert r11.triggered is True
 
     def test_r12_failed_rule_flagged(self, engine, snapshot_calm, research_empty):
         signals = engine.evaluate_all(snapshot_calm, research_empty)
@@ -221,12 +222,12 @@ class TestRuleEngine:
         assert r5.triggered is False
         assert r6.triggered is False
 
-    def test_all_14_rules_evaluated(self, engine, snapshot_high_vix, research_empty):
+    def test_all_17_rules_evaluated(self, engine, snapshot_high_vix, research_empty):
         signals = engine.evaluate_all(snapshot_high_vix, research_empty)
-        assert len(signals) == 14
+        assert len(signals) >= 17
         rule_ids = {s.rule_id for s in signals}
-        expected = {f"R{i}" for i in range(1, 15)}
-        assert rule_ids == expected
+        expected = {f"R{i}" for i in range(1, 18)}
+        assert expected.issubset(rule_ids)
 
 
 # ---------------------------------------------------------------------------
@@ -338,8 +339,443 @@ class TestMockMode:
         assert "market_snapshot" in data
         assert "active_signals" in data
         assert "recommendations" in data
-        assert len(data["active_signals"]) == 14
+        assert len(data["active_signals"]) >= 14
 
         # Validate markdown output
         md = result.brief_path.read_text()
         assert "## Trading Recommendations" in md
+
+
+# ---------------------------------------------------------------------------
+# Post-processing validation tests
+# ---------------------------------------------------------------------------
+class TestPostProcessingValidation:
+    def _make_rec(self, ticker="SPY", direction="call", strike=685.0,
+                  allocation=1000, max_loss=500, confidence="medium"):
+        return TradeRecommendation(
+            ticker=ticker,
+            direction=direction,
+            strike=strike,
+            expiry="2026-02-28",
+            entry_timing="At open",
+            allocation_dollars=allocation,
+            max_loss_dollars=max_loss,
+            triggered_rules=["R4"],
+            reasoning="Test",
+            confidence=confidence,
+        )
+
+    def test_hedge_injection_all_calls(self):
+        """If all trades are calls, a put hedge should be injected."""
+        recs = [
+            self._make_rec("SPY", "call", 685.0, 1000, 500),
+            self._make_rec("NVDA", "call", 135.0, 800, 400),
+            self._make_rec("AMD", "call", 160.0, 600, 300),
+        ]
+        result = _validate_and_fix_recommendations(recs, {}, 5000)
+        directions = [r.direction for r in result]
+        assert "put" in directions
+        hedge = [r for r in result if r.direction == "put"]
+        assert len(hedge) >= 1
+        assert "hedge" in hedge[0].triggered_rules
+
+    def test_hedge_injection_all_puts(self):
+        """If all trades are puts, a call hedge should be injected."""
+        recs = [
+            self._make_rec("SPY", "put", 680.0, 1000, 500),
+            self._make_rec("NVDA", "put", 130.0, 800, 400),
+        ]
+        result = _validate_and_fix_recommendations(recs, {}, 5000)
+        directions = [r.direction for r in result]
+        assert "call" in directions
+
+    def test_no_hedge_injection_when_mixed(self):
+        """If trades already have both directions, no hedge is injected."""
+        recs = [
+            self._make_rec("SPY", "call", 685.0, 1000, 500),
+            self._make_rec("SPY", "put", 680.0, 400, 200),
+        ]
+        result = _validate_and_fix_recommendations(recs, {}, 5000)
+        assert len(result) == 2  # no extra hedge added
+
+    def test_strike_snapping(self):
+        """Invalid strikes should snap to nearest available in chain."""
+        recs = [self._make_rec("SPY", "call", 687.0, 1000, 500)]
+        chains = {
+            "SPY": {
+                "calls": [
+                    {"strike": 685.0, "lastPrice": 3.0, "bid": 2.8, "ask": 3.2, "openInterest": 100},
+                    {"strike": 686.0, "lastPrice": 2.5, "bid": 2.3, "ask": 2.7, "openInterest": 80},
+                    {"strike": 688.0, "lastPrice": 1.5, "bid": 1.3, "ask": 1.7, "openInterest": 60},
+                ],
+                "puts": [],
+                "preferred_call_strike": 685.0,
+                "preferred_put_strike": 685.0,
+            }
+        }
+        result = _validate_and_fix_recommendations(recs, chains, 5000)
+        # 687 should snap to nearest available (686 is 1 away, 688 is 1 away; min picks 686)
+        assert result[0].strike in (686.0, 688.0)
+        assert result[0].strike != 687.0  # original invalid strike is gone
+
+    def test_allocation_cap_35_percent(self):
+        """No single trade should exceed 35% of max allocation."""
+        recs = [self._make_rec("SPY", "call", 685.0, 3000, 1500)]
+        result = _validate_and_fix_recommendations(recs, {}, 5000)
+        # 35% of 5000 = 1750
+        assert result[0].allocation_dollars <= 1750
+
+    def test_total_scaling(self):
+        """Total allocation should not exceed max_allocation."""
+        recs = [
+            self._make_rec("SPY", "call", 685.0, 1500, 750),
+            self._make_rec("NVDA", "call", 135.0, 1500, 750),
+            self._make_rec("AMD", "call", 160.0, 1500, 750),
+            self._make_rec("MSFT", "put", 410.0, 1500, 750),  # mixed, no hedge
+        ]
+        result = _validate_and_fix_recommendations(recs, {}, 5000)
+        total = sum(r.allocation_dollars for r in result)
+        assert total <= 5000
+
+
+# ---------------------------------------------------------------------------
+# New threshold tests
+# ---------------------------------------------------------------------------
+class TestNewThresholds:
+    def test_r4_triggers_at_vix_19(self, engine, research_empty):
+        """R4 should now trigger at VIX 19.0 (new threshold 18.5)."""
+        snap = MarketSnapshot(
+            as_of="2026-02-25T08:15:00-06:00",
+            spy_price=685.0, spy_prev_close=687.0,
+            spy_premarket_change_pct=-0.29,
+            vix=19.0, gap_pct=-0.29,
+        )
+        signals = engine.evaluate_all(snap, research_empty)
+        r4 = next(s for s in signals if s.rule_id == "R4")
+        assert r4.triggered is True
+
+    def test_r8_triggers_at_gap_minus_026(self, engine, research_empty):
+        """R8 should now trigger at gap -0.26% (new threshold -0.25)."""
+        snap = MarketSnapshot(
+            as_of="2026-02-25T08:15:00-06:00",
+            spy_price=685.0, spy_prev_close=687.0,
+            spy_premarket_change_pct=-0.26,
+            vix=15.0, gap_pct=-0.26,
+        )
+        signals = engine.evaluate_all(snap, research_empty)
+        r8 = next(s for s in signals if s.rule_id == "R8")
+        assert r8.triggered is True
+
+    def test_r11_triggers_at_5d_minus_16(self, engine, research_empty):
+        """R11 should now trigger at -1.6% (new threshold -1.5)."""
+        snap = MarketSnapshot(
+            as_of="2026-02-25T08:15:00-06:00",
+            spy_price=685.0, spy_prev_close=687.0,
+            spy_premarket_change_pct=-0.29,
+            spy_5d_change_pct=-1.6,
+            vix=15.0, gap_pct=-0.29,
+        )
+        signals = engine.evaluate_all(snap, research_empty)
+        r11 = next(s for s in signals if s.rule_id == "R11")
+        assert r11.triggered is True
+
+    def test_r10_triggers_at_volume_125(self, engine, research_empty):
+        """R10 should now trigger at 1.25x volume (new threshold 1.2)."""
+        snap = MarketSnapshot(
+            as_of="2026-02-25T08:15:00-06:00",
+            spy_price=685.0, spy_prev_close=687.0,
+            spy_premarket_change_pct=-0.10,
+            spy_volume_ratio=1.25,
+            vix=15.0, gap_pct=-0.10,
+        )
+        signals = engine.evaluate_all(snap, research_empty)
+        r10 = next(s for s in signals if s.rule_id == "R10")
+        assert r10.triggered is True
+
+    def test_r13_triggers_at_vix_17_5(self, engine, research_empty):
+        """R13 should now trigger at VIX 17.5 (new threshold_vix 17.0)."""
+        snap = MarketSnapshot(
+            as_of="2026-02-25T08:15:00-06:00",
+            spy_price=685.0, spy_prev_close=687.0,
+            spy_premarket_change_pct=-0.10,
+            vix=17.5, us10y_change_bps=-3.0,
+            gap_pct=-0.10,
+        )
+        signals = engine.evaluate_all(snap, research_empty)
+        r13 = next(s for s in signals if s.rule_id == "R13")
+        assert r13.triggered is True
+
+
+# ---------------------------------------------------------------------------
+# SympathyPlay entry_timing tests
+# ---------------------------------------------------------------------------
+class TestSympathyPlayTiming:
+    def test_sympathy_play_with_entry_timing(self):
+        sp = SympathyPlay(
+            primary_ticker="NVDA",
+            primary_catalyst="Earnings after close",
+            sympathy_ticker="AMD",
+            beta=1.01,
+            direction="call",
+            entry_timing="NEXT DAY ONLY",
+            reasoning="Test",
+        )
+        assert sp.entry_timing == "NEXT DAY ONLY"
+
+    def test_sympathy_play_without_entry_timing(self):
+        sp = SympathyPlay(
+            primary_ticker="NVDA",
+            primary_catalyst="Earnings before open",
+            sympathy_ticker="AMD",
+            beta=1.01,
+            direction="call",
+            reasoning="Test",
+        )
+        assert sp.entry_timing is None
+
+    def test_mock_sympathy_plays_have_timing(self):
+        _, sympathy = _build_mock_recommendations()
+        for s in sympathy:
+            sp = SympathyPlay(**s)
+            assert sp.entry_timing is not None
+
+
+# ---------------------------------------------------------------------------
+# R15: Sell-the-News tests
+# ---------------------------------------------------------------------------
+class TestR15SellTheNews:
+    @pytest.fixture
+    def engine(self):
+        return RuleEngine()
+
+    @pytest.fixture
+    def snapshot(self):
+        return MarketSnapshot(
+            as_of="2026-02-27T08:15:00-06:00",
+            spy_price=685.0, spy_prev_close=687.0,
+            spy_premarket_change_pct=-0.29,
+            vix=18.0, gap_pct=-0.29,
+        )
+
+    @pytest.fixture
+    def research_with_earnings(self):
+        return {
+            "date": "2026-02-27",
+            "events": [],
+            "earnings": [
+                {"company": "Nvidia", "ticker": "NVDA", "date": "2026-02-26",
+                 "time_hint": "After Close"},
+            ],
+            "headlines": [],
+        }
+
+    def test_r15_triggers_on_rally_and_fade(self, engine, snapshot, research_with_earnings):
+        """R15 triggers when stock rallied >5% into earnings and is now flat/down."""
+        scans = [
+            {"ticker": "NVDA", "price": 130.0, "day_change_pct": -2.5,
+             "change_5d_pct": 8.0, "change_20d_pct": -5.0,
+             "distance_from_20sma_pct": -3.0, "volume_ratio": 1.5,
+             "signals": ["oversold"], "signal_score": 2.0},
+        ]
+        signals = engine.evaluate_all(snapshot, research_with_earnings, watchlist_scans=scans)
+        r15_signals = [s for s in signals if s.rule_id == "R15"]
+        triggered = [s for s in r15_signals if s.triggered]
+        assert len(triggered) == 1
+        assert triggered[0].target_ticker == "NVDA"
+        assert triggered[0].direction == "short"
+
+    def test_r15_no_trigger_when_not_rallied(self, engine, snapshot, research_with_earnings):
+        """R15 does not trigger if stock didn't rally >5% before earnings."""
+        scans = [
+            {"ticker": "NVDA", "price": 130.0, "day_change_pct": -1.0,
+             "change_5d_pct": 2.0, "change_20d_pct": -5.0,
+             "distance_from_20sma_pct": -3.0, "volume_ratio": 1.5,
+             "signals": ["oversold"], "signal_score": 2.0},
+        ]
+        signals = engine.evaluate_all(snapshot, research_with_earnings, watchlist_scans=scans)
+        r15_signals = [s for s in signals if s.rule_id == "R15"]
+        triggered = [s for s in r15_signals if s.triggered]
+        assert len(triggered) == 0
+
+    def test_r15_no_trigger_without_scans(self, engine, snapshot, research_with_earnings):
+        """R15 gracefully handles missing watchlist scan data."""
+        signals = engine.evaluate_all(snapshot, research_with_earnings, watchlist_scans=None)
+        r15_signals = [s for s in signals if s.rule_id == "R15"]
+        assert len(r15_signals) >= 1
+        assert all(not s.triggered for s in r15_signals)
+
+
+# ---------------------------------------------------------------------------
+# R16: Mega-Cap Earnings Vol Event tests
+# ---------------------------------------------------------------------------
+class TestR16MegaCapVol:
+    @pytest.fixture
+    def engine(self):
+        return RuleEngine()
+
+    @pytest.fixture
+    def snapshot(self):
+        return MarketSnapshot(
+            as_of="2026-02-27T08:15:00-06:00",
+            spy_price=685.0, spy_prev_close=687.0,
+            spy_premarket_change_pct=-0.29,
+            vix=18.0, gap_pct=-0.29,
+        )
+
+    def test_r16_muted_reaction_triggers(self, engine, snapshot):
+        """R16 triggers on muted reaction (<1%) after mega-cap earnings."""
+        research = {
+            "date": "2026-02-27",
+            "events": [],
+            "earnings": [
+                {"company": "Nvidia", "ticker": "NVDA", "date": "2026-02-26",
+                 "time_hint": "After Close"},
+            ],
+            "headlines": [],
+        }
+        scans = [
+            {"ticker": "NVDA", "price": 130.0, "day_change_pct": 0.5,
+             "change_5d_pct": 2.0, "change_20d_pct": -5.0,
+             "distance_from_20sma_pct": -3.0, "volume_ratio": 1.5,
+             "signals": ["oversold"], "signal_score": 2.0},
+        ]
+        signals = engine.evaluate_all(snapshot, research, watchlist_scans=scans)
+        r16_signals = [s for s in signals if s.rule_id == "R16" and s.triggered]
+        assert len(r16_signals) >= 1
+        assert r16_signals[0].target_ticker == "NVDA"
+
+    def test_r16_upcoming_binary_event(self, engine, snapshot):
+        """R16 triggers warning for upcoming mega-cap earnings after close."""
+        research = {
+            "date": "2026-02-27",
+            "events": [],
+            "earnings": [
+                {"company": "Nvidia", "ticker": "NVDA", "date": "2026-02-27",
+                 "time_hint": "After Close"},
+            ],
+            "headlines": [],
+        }
+        # No scan data needed — just the earnings listing
+        signals = engine.evaluate_all(snapshot, research, watchlist_scans=[])
+        r16_signals = [s for s in signals if s.rule_id == "R16" and s.triggered]
+        assert len(r16_signals) >= 1
+
+    def test_r16_ignores_non_megacap(self, engine, snapshot):
+        """R16 does not trigger for non-mega-cap stocks."""
+        research = {
+            "date": "2026-02-27",
+            "events": [],
+            "earnings": [
+                {"company": "Acme Corp", "ticker": "ACME", "date": "2026-02-26",
+                 "time_hint": "After Close"},
+            ],
+            "headlines": [],
+        }
+        scans = [
+            {"ticker": "ACME", "price": 50.0, "day_change_pct": 0.3,
+             "change_5d_pct": 1.0, "change_20d_pct": 2.0,
+             "distance_from_20sma_pct": 0.5, "volume_ratio": 1.0,
+             "signals": [], "signal_score": 0.0},
+        ]
+        signals = engine.evaluate_all(snapshot, research, watchlist_scans=scans)
+        r16_signals = [s for s in signals if s.rule_id == "R16" and s.triggered]
+        assert len(r16_signals) == 0
+
+
+# ---------------------------------------------------------------------------
+# R17: Contrarian Warning tests
+# ---------------------------------------------------------------------------
+class TestR17Contrarian:
+    def _make_rec(self, ticker="SPY", direction="call", allocation=1000):
+        return TradeRecommendation(
+            ticker=ticker, direction=direction, strike=685.0,
+            expiry="2026-02-28", entry_timing="At open",
+            allocation_dollars=allocation, max_loss_dollars=allocation // 2,
+            triggered_rules=["R4"], reasoning="Test", confidence="medium",
+        )
+
+    def test_r17_20pct_hedge_when_all_bullish(self):
+        """R17 bumps hedge to 20% when all scans bullish + all recs are calls."""
+        recs = [
+            self._make_rec("SPY", "call", 1500),
+            self._make_rec("NVDA", "call", 1000),
+            self._make_rec("AMD", "call", 800),
+        ]
+        scans = [
+            {"ticker": "NVDA", "signals": ["oversold", "below_sma"], "signal_score": 2.5},
+            {"ticker": "AMD", "signals": ["deeply_oversold"], "signal_score": 2.0},
+        ]
+        signals = [
+            RuleSignal(rule_id="R4", rule_name="VIX >20", triggered=True,
+                       direction="long", confidence="high", win_rate=1.0,
+                       sample_size=7, reasoning="Test"),
+        ]
+        result = _validate_and_fix_recommendations(
+            recs, {}, 5000, watchlist_scans=scans, active_signals=signals,
+        )
+        hedge = [r for r in result if r.direction == "put"]
+        assert len(hedge) >= 1
+        assert "R17" in hedge[0].triggered_rules
+        # 20% of 5000 = 1000
+        assert hedge[0].allocation_dollars == 1000
+
+    def test_r17_not_triggered_with_mixed_signals(self):
+        """R17 does not trigger if scans have non-bullish signals."""
+        recs = [
+            self._make_rec("SPY", "call", 1500),
+            self._make_rec("NVDA", "call", 1000),
+        ]
+        scans = [
+            {"ticker": "NVDA", "signals": ["oversold", "below_sma"], "signal_score": 2.5},
+            {"ticker": "TSLA", "signals": ["overbought"], "signal_score": 0.5},
+        ]
+        result = _validate_and_fix_recommendations(
+            recs, {}, 5000, watchlist_scans=scans, active_signals=[],
+        )
+        hedge = [r for r in result if r.direction == "put"]
+        assert len(hedge) >= 1
+        # Standard hedge, NOT R17
+        assert "R17" not in hedge[0].triggered_rules
+
+    def test_r17_not_triggered_when_puts_present(self):
+        """R17 does not trigger when recommendations already include puts."""
+        recs = [
+            self._make_rec("SPY", "call", 1500),
+            self._make_rec("SPY", "put", 800),
+        ]
+        scans = [
+            {"ticker": "NVDA", "signals": ["oversold"], "signal_score": 1.5},
+        ]
+        result = _validate_and_fix_recommendations(
+            recs, {}, 5000, watchlist_scans=scans, active_signals=[],
+        )
+        # No extra hedge injected since mix already present
+        assert len(result) == 2
+
+
+# ---------------------------------------------------------------------------
+# Intraday re-run tests
+# ---------------------------------------------------------------------------
+class TestIntradayRerun:
+    def test_intraday_writes_separate_files(self, tmp_path):
+        from agent.recommendations import run_recommendations
+
+        result = run_recommendations(
+            date="2026-02-25",
+            tz="America/Chicago",
+            watchlist=["NVDA"],
+            out_dir=tmp_path,
+            mock_mode=True,
+            is_intraday_rerun=True,
+        )
+        assert result.recommendations_path.exists()
+        assert result.brief_path.exists()
+        assert "intraday" in result.recommendations_path.name
+        assert "intraday" in result.brief_path.name
+
+        with open(result.recommendations_path) as f:
+            data = json.load(f)
+        assert data.get("is_intraday_rerun") is True
+
+        md = result.brief_path.read_text()
+        assert "INTRADAY RE-RUN" in md

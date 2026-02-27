@@ -36,6 +36,11 @@ def main(argv: list[str] | None = None) -> int:
         default=5000.0,
         help="Maximum total dollar allocation across all trades",
     )
+    parser.add_argument(
+        "--time-check",
+        action="store_true",
+        help="Intraday re-run: writes to recommendations_intraday.* files",
+    )
 
     args = parser.parse_args(argv)
 
@@ -53,6 +58,7 @@ def main(argv: list[str] | None = None) -> int:
         out_dir=Path(args.out),
         mock_mode=args.mock,
         max_allocation=args.max_allocation,
+        is_intraday_rerun=args.time_check,
     )
 
     logging.getLogger(__name__).info(

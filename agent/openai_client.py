@@ -208,6 +208,7 @@ class OpenAIClient:
         max_allocation: float = 5000.0,
         watchlist: Iterable[str] = (),
         watchlist_scans: list[Dict[str, Any]] | None = None,
+        earnings_timing: Dict[str, str] | None = None,
     ) -> Dict[str, Any]:
         """Generate specific trade recommendations from rule signals and market data."""
         watchlist_text = ", ".join([w for w in watchlist if w]) or "SPY"
@@ -223,6 +224,7 @@ class OpenAIClient:
                 events_today.append(ev)
 
         earnings_upcoming = research.get("earnings", [])[:5]
+        earnings_timing = earnings_timing or {}
 
         schema = """{
   "recommendations": [
@@ -248,6 +250,7 @@ class OpenAIClient:
       "sympathy_ticker": "AMD",
       "beta": 1.01,
       "direction": "call" | "put",
+      "entry_timing": "NEXT DAY ONLY" | "Same day" | null,
       "reasoning": "..."
     }
   ]
@@ -266,6 +269,21 @@ class OpenAIClient:
                 "put candidates or avoid.\n"
             )
 
+        # Build per-ticker signal section (R15/R16 signals)
+        per_ticker_signals = [
+            s for s in signals
+            if s.get("triggered") and s.get("target_ticker")
+        ]
+        per_ticker_text = ""
+        if per_ticker_signals:
+            per_ticker_text = (
+                "\n*** PER-TICKER EVENT SIGNALS (HIGH PRIORITY) ***\n"
+                f"{json.dumps(per_ticker_signals, indent=2)}\n\n"
+                "IMPORTANT: These per-ticker signals represent event-driven patterns "
+                "(sell-the-news, mega-cap earnings vol). They should directly influence "
+                "your recommendations for the specific tickers listed.\n"
+            )
+
         prompt = (
             "You are a quantitative trading assistant. Generate specific trade "
             "recommendations based ONLY on the provided signals, market data, and "
@@ -280,26 +298,44 @@ class OpenAIClient:
             f"Sympathy Map:\n{json.dumps(sympathy_map, indent=2)}\n\n"
             f"Available Options Chains:\n{json.dumps(options_chains, indent=2)}\n\n"
             f"{scan_text}"
+            f"{per_ticker_text}"
+            f"Earnings Timing Tags:\n{json.dumps(earnings_timing, indent=2)}\n\n"
             f"Max Total Allocation: ${max_allocation:.0f}\n\n"
             "Rules for generating recommendations:\n"
             "1. ALWAYS include at least 1 SPY trade (call or put based on macro signals).\n"
-            "2. Generate 5 to 7 total trade recommendations — diversify across SPY and individual stocks.\n"
+            "2. Generate 5 to 7 total trade recommendations (including exactly 1 hedge trade) — diversify across SPY and individual stocks.\n"
             "3. Use triggered macro signals (R1-R14) for SPY directional trades.\n"
             "4. Use watchlist scan data for individual stock picks — oversold stocks with below-SMA "
             "signals are good call candidates; overbought stocks are put candidates.\n"
             "5. Use earnings catalysts and sympathy map for event-driven plays.\n"
-            "6. Select strikes: ATM to 1% OTM for higher probability.\n"
+            "6. Select strikes: MUST be within 0-1% OTM. NEVER pick strikes >1.5% OTM. "
+            "Prefer the preferred_call_strike or preferred_put_strike from the options chain data.\n"
             "7. Select expiry: nearest Friday at least 2 days out from the available options.\n"
             "8. Allocation per trade: $300-$500 (low confidence), $500-$1500 (medium), $1500-$2500 (high).\n"
             "9. Stop loss: 50% of premium paid.\n"
             "10. Take profit: 100-200% of premium paid.\n"
             "11. If 3+ bullish signals, increase allocation. If mixed (long+short), reduce sizes.\n"
-            "12. Always include at least one hedge trade (opposite direction, e.g. SPY put if mostly bullish).\n"
+            "12. MANDATORY hedge trade: include exactly one hedge trade in the opposite direction "
+            "(e.g. SPY put if mostly bullish). Allocate 15-20% of total allocation to it. Non-negotiable.\n"
             "13. Include entry timing: 'at open' for gap plays, '9:45 AM CT' for pullback entries, "
             "'after earnings' for catalyst plays.\n"
             "14. For sympathy plays, only include if a clear catalyst exists (earnings, major event).\n"
             "15. If no signals are triggered at all, return at least 2 low-confidence watchlist-based trades.\n"
-            "16. Each recommendation MUST have a unique reasoning — explain why THIS specific trade, not generic.\n\n"
+            "16. Each recommendation MUST have a unique reasoning — explain why THIS specific trade, not generic.\n"
+            "17. Strikes MUST exist in the provided options chain data. Do not invent strikes.\n"
+            "18. Max 30% allocation per individual trade. No single trade should dominate.\n"
+            "19. Deeply oversold stocks (extreme_oversold or deeply_oversold signals) with upcoming earnings = HIGH confidence plays.\n"
+            "20. After-close earnings → sympathy plays MUST be tagged entry_timing='NEXT DAY ONLY'. "
+            "Before-open earnings → 'Same day'. Use the Earnings Timing Tags data.\n"
+            "21. For each trade, explain the strike choice vs ATM in the reasoning field.\n"
+            "22. SELL-THE-NEWS (R15): If a per-ticker signal shows sell-the-news pattern, "
+            "generate a PUT recommendation on that specific ticker. The stock rallied into "
+            "earnings and is now fading — classic post-earnings fade. Use ATM or slightly OTM put.\n"
+            "23. MEGA-CAP VOL EVENT (R16): If a per-ticker signal shows muted mega-cap reaction, "
+            "reduce long exposure on that ticker. If a mega-cap has upcoming earnings after close, "
+            "use smaller sizing on that ticker's positions (binary event risk).\n"
+            "24. ALL-BULLISH CONTRARIAN (R17): If flagged, acknowledge one-directional positioning "
+            "risk. The hedge allocation is enforced to 20% in post-processing — do NOT reduce it.\n\n"
             "Return ONLY valid JSON matching this schema (no markdown, no code fences):\n"
             f"{schema}\n"
         )
