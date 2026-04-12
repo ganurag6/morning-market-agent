@@ -1,0 +1,19 @@
+{
+  "description": "AI-thesis universe with dip-buy tiers based on 1-year bounce data. A-tier = reliable bouncers (100% hit rate). B-tier = solid (60%+). C-tier = avoid for dip-buying.",
+  "sectors": {
+    "AI Infrastructure": ["NVDA", "AMD", "AVGO", "QCOM", "MU", "AMAT", "MRVL", "TSM"],
+    "Cloud & AI Platforms": ["AMZN", "GOOGL", "META", "MSFT", "ORCL", "PLTR", "SNOW"],
+    "AI-Powered Hardware": ["AAPL", "DELL", "HPE", "SMCI"],
+    "Healthcare": ["UNH", "JNJ", "ABBV", "LLY", "CVS", "MRK", "ISRG", "TMO"],
+    "Energy & Power (AI data centers)": ["XOM", "CVX", "COP", "VST", "CEG", "NEE", "SO"],
+    "Industrials & Defense": ["CAT", "DE", "LMT", "RTX", "GE", "HON"],
+    "Financials": ["JPM", "GS", "MS", "V", "MA"],
+    "Consumer Staples": ["COST", "WMT", "PG", "KO"]
+  },
+  "tiers": {
+    "A": ["MU", "AMD", "AMAT", "MRVL", "CAT", "DELL", "SMCI", "TSM"],
+    "B": ["NVDA", "AVGO", "AMZN", "GOOGL", "META", "ORCL", "PLTR", "SNOW", "AAPL", "HPE", "UNH", "LLY", "CVS", "MRK", "TMO", "XOM", "COP", "VST", "CEG", "NEE", "LMT", "RTX", "DE", "GE", "GS", "MS", "JPM", "WMT"],
+    "C": ["MSFT", "V", "MA", "PG", "KO", "HON", "ISRG", "ABBV", "SO", "COST", "JNJ", "QCOM", "CVX"]
+  },
+  "always_include": ["AMZN", "UNH", "QCOM", "CVS"]
+}

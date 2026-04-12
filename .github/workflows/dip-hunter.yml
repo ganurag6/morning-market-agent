@@ -1,0 +1,75 @@
+name: "Dip Hunter Daily Picks (7:30 AM CT)"
+
+on:
+  schedule:
+    # 7:30 AM CST = 13:30 UTC, Mon-Fri
+    - cron: "30 13 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  dip-hunter-picks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Get current date
+        id: date
+        run: echo "today=$(TZ=America/Chicago date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore picks history
+        run: |
+          # Pull latest picks_history.json from the repo if it exists
+          if [ -f dip_hunter/data/picks_history.json ]; then
+            echo "Picks history found ($(wc -l < dip_hunter/data/picks_history.json) lines)"
+          else
+            echo "No picks history yet — starting fresh"
+          fi
+
+      - name: Run Dip Hunter
+        run: |
+          python -m dip_hunter \
+            --date "${{ steps.date.outputs.today }}" \
+            --tz America/Chicago \
+            --out ./out \
+            --capital 25000
+
+      - name: Build email body
+        id: email_body
+        run: |
+          OUTDIR="out/${{ steps.date.outputs.today }}"
+          echo "body<<EMAIL_EOF" >> "$GITHUB_OUTPUT"
+          cat "$OUTDIR/dip_hunter.md" >> "$GITHUB_OUTPUT"
+          echo "EMAIL_EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Send email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Dip Hunter Picks - ${{ steps.date.outputs.today }}"
+          to: ganurag6@gmail.com
+          from: ${{ secrets.SMTP_USERNAME }}
+          body: ${{ steps.email_body.outputs.body }}
+          convert_markdown: true
+          attachments: out/${{ steps.date.outputs.today }}/dip_hunter.json
+
+      - name: Commit picks history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -f dip_hunter/data/picks_history.json ]; then
+            git add dip_hunter/data/picks_history.json
+            git diff --cached --quiet || git commit -m "Update picks history — ${{ steps.date.outputs.today }}"
+            git push
+          fi

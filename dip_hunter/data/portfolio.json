@@ -1,0 +1,38 @@
+{
+  "updated_at": "2026-04-12T09:07:23",
+  "capital_total": 25000.0,
+  "capital_deployed": 19702.05,
+  "capital_available": 5297.95,
+  "max_positions": 5,
+  "holdings": [
+    {
+      "ticker": "AMZN",
+      "shares": 20,
+      "avg_cost": 238.38,
+      "entry_date": "2026-04-11",
+      "strategy_notes": ""
+    },
+    {
+      "ticker": "UNH",
+      "shares": 15,
+      "avg_cost": 304.33,
+      "entry_date": "2026-04-11",
+      "strategy_notes": ""
+    },
+    {
+      "ticker": "QCOM",
+      "shares": 50,
+      "avg_cost": 128.06,
+      "entry_date": "2026-04-11",
+      "strategy_notes": ""
+    },
+    {
+      "ticker": "CVS",
+      "shares": 50,
+      "avg_cost": 79.33,
+      "entry_date": "2026-04-11",
+      "strategy_notes": ""
+    }
+  ],
+  "trade_history": []
+}

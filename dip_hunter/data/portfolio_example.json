@@ -1,0 +1,14 @@
+{
+  "updated_at": "2026-04-11T08:00:00-05:00",
+  "capital_total": 15000.0,
+  "capital_deployed": 0.0,
+  "capital_available": 15000.0,
+  "max_positions": 5,
+  "holdings": [
+    {"ticker": "AMZN", "shares": 20, "avg_cost": 0.0, "entry_date": "2026-04-11", "strategy_notes": "Existing position - cost basis TBD"},
+    {"ticker": "UNH", "shares": 15, "avg_cost": 0.0, "entry_date": "2026-04-11", "strategy_notes": "Existing position - cost basis TBD"},
+    {"ticker": "QCOM", "shares": 50, "avg_cost": 0.0, "entry_date": "2026-04-11", "strategy_notes": "Existing position - cost basis TBD"},
+    {"ticker": "CVS", "shares": 50, "avg_cost": 0.0, "entry_date": "2026-04-11", "strategy_notes": "Existing position - cost basis TBD"}
+  ],
+  "trade_history": []
+}
