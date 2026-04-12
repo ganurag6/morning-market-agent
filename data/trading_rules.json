@@ -263,5 +263,27 @@
     "cumulative_return": 0.0,
     "confidence": "medium",
     "grade": "C"
+  },
+  {
+    "id": "R18",
+    "name": "Geopolitical Risk Escalation",
+    "description": "Headlines contain multiple high-impact geopolitical risk signals (war, military conflict, sanctions escalation, trade war). Reduces long exposure and increases hedge allocation. Oil spike >3% reinforces the signal.",
+    "direction": "short",
+    "condition_type": "geopolitical_risk",
+    "operator": "compound",
+    "requires_macro_day": false,
+    "scope": "portfolio_level",
+    "threshold_headline_score": 6,
+    "threshold_oil_spike_pct": 3.0,
+    "geopolitical_keywords": [
+      "war", "military", "conflict", "invasion", "airstrike", "missile",
+      "sanctions", "embargo", "blockade", "escalation", "retaliation",
+      "troops", "nuclear", "ceasefire breakdown", "trade war", "tariff"
+    ],
+    "win_rate": 0.55,
+    "sample_size": 0,
+    "cumulative_return": 0.0,
+    "confidence": "medium",
+    "grade": "B"
   }
 ]

@@ -17,6 +17,7 @@ from agent.rec_schema import (
 from agent.recommendations import (
     RuleEngine,
     build_recommendation_brief,
+    compute_rule_weight,
     _build_mock_snapshot,
     _build_mock_recommendations,
     _validate_and_fix_recommendations,
@@ -222,11 +223,11 @@ class TestRuleEngine:
         assert r5.triggered is False
         assert r6.triggered is False
 
-    def test_all_17_rules_evaluated(self, engine, snapshot_high_vix, research_empty):
+    def test_all_18_rules_evaluated(self, engine, snapshot_high_vix, research_empty):
         signals = engine.evaluate_all(snapshot_high_vix, research_empty)
-        assert len(signals) >= 17
+        assert len(signals) >= 18
         rule_ids = {s.rule_id for s in signals}
-        expected = {f"R{i}" for i in range(1, 18)}
+        expected = {f"R{i}" for i in range(1, 19)}
         assert expected.issubset(rule_ids)
 
 
@@ -251,6 +252,7 @@ class TestBriefBuilder:
                     current_value=21.30,
                     threshold=20.0,
                     reasoning="VIX elevated.",
+                    weight=1.0,
                 )
             ],
             recommendations=[
@@ -282,6 +284,8 @@ class TestBriefBuilder:
         assert "Trade 1:" in md
         assert "SPY" in md
         assert "DISCLAIMER" in md
+        assert "| Weight |" in md
+        assert "weight 1.00" in md  # weighted confluence summary
 
     def test_no_trades_message(self, snapshot_calm):
         pack = RecommendationPack(
@@ -779,3 +783,233 @@ class TestIntradayRerun:
 
         md = result.brief_path.read_text()
         assert "INTRADAY RE-RUN" in md
+
+
+# ---------------------------------------------------------------------------
+# R18: Geopolitical Risk Escalation tests
+# ---------------------------------------------------------------------------
+class TestR18GeopoliticalRisk:
+    @pytest.fixture
+    def engine(self):
+        return RuleEngine()
+
+    @pytest.fixture
+    def snapshot(self):
+        return MarketSnapshot(
+            as_of="2026-03-01T08:15:00-06:00",
+            spy_price=680.0, spy_prev_close=690.0,
+            spy_premarket_change_pct=-1.45,
+            vix=22.0, gap_pct=-1.45,
+        )
+
+    def test_r18_triggers_on_geopolitical_headlines(self, engine, snapshot):
+        """R18 triggers when headlines contain multiple geopolitical keywords."""
+        research = {
+            "date": "2026-03-01",
+            "events": [],
+            "earnings": [],
+            "headlines": [
+                {"title": "Military conflict escalates in Middle East",
+                 "topic": "Geopolitics", "tickers": [], "impact": "high",
+                 "one_line_take": "Airstrike campaign intensifies.", "sources": []},
+                {"title": "Oil surges on sanctions and embargo fears",
+                 "topic": "Energy", "tickers": [], "impact": "high",
+                 "one_line_take": "Crude spikes on supply disruption risk.", "sources": []},
+                {"title": "Markets sell off on retaliation fears",
+                 "topic": "Macro", "tickers": [], "impact": "high",
+                 "one_line_take": "Escalation drives risk-off move.", "sources": []},
+            ],
+            "market_state": {
+                "rates_fx_oil": {"wti_change": "+4.2%"},
+            },
+            "weekly_context": {"themes": []},
+        }
+        signals = engine.evaluate_all(snapshot, research)
+        r18 = next(s for s in signals if s.rule_id == "R18")
+        assert r18.triggered is True
+        assert r18.direction == "short"
+        assert r18.current_value >= 6
+
+    def test_r18_no_trigger_on_calm_headlines(self, engine, snapshot):
+        """R18 does not trigger when no geopolitical risk detected."""
+        research = {
+            "date": "2026-03-01",
+            "events": [],
+            "earnings": [],
+            "headlines": [
+                {"title": "Tech stocks rally on AI optimism",
+                 "topic": "Tech", "tickers": ["NVDA"], "impact": "high",
+                 "one_line_take": "AI spend lifts semis.", "sources": []},
+                {"title": "CPI comes in line with expectations",
+                 "topic": "Macro", "tickers": [], "impact": "medium",
+                 "one_line_take": "Inflation stable.", "sources": []},
+            ],
+            "market_state": {
+                "rates_fx_oil": {"wti_change": "-0.5%"},
+            },
+            "weekly_context": {"themes": []},
+        }
+        signals = engine.evaluate_all(snapshot, research)
+        r18 = next(s for s in signals if s.rule_id == "R18")
+        assert r18.triggered is False
+
+    def test_r18_oil_spike_adds_bonus(self, engine, snapshot):
+        """Oil spike >3% adds bonus score to R18."""
+        research = {
+            "date": "2026-03-01",
+            "events": [],
+            "earnings": [],
+            "headlines": [
+                {"title": "Sanctions escalation shakes energy markets",
+                 "topic": "Energy", "tickers": [], "impact": "medium",
+                 "one_line_take": "Embargo threat rises.", "sources": []},
+                {"title": "Troops mobilize near border as conflict deepens",
+                 "topic": "Geopolitics", "tickers": [], "impact": "high",
+                 "one_line_take": "Military buildup accelerates.", "sources": []},
+            ],
+            "market_state": {
+                "rates_fx_oil": {"wti_change": "+5.0%"},
+            },
+            "weekly_context": {"themes": []},
+        }
+        signals = engine.evaluate_all(snapshot, research)
+        r18 = next(s for s in signals if s.rule_id == "R18")
+        # sanctions(medium=2) + troops(high=3) + oil bonus(3) = 8 >= 6
+        assert r18.triggered is True
+        assert "oil" in r18.reasoning.lower()
+
+    def test_r18_post_processing_scales_allocations(self):
+        """R18 post-processing reduces call allocations by 25% and sets 30% hedge."""
+        recs = [
+            TradeRecommendation(
+                ticker="SPY", direction="call", strike=685.0,
+                expiry="2026-03-07", entry_timing="At open",
+                allocation_dollars=2000, max_loss_dollars=1000,
+                triggered_rules=["R4"], reasoning="Test", confidence="high",
+            ),
+            TradeRecommendation(
+                ticker="NVDA", direction="call", strike=130.0,
+                expiry="2026-03-07", entry_timing="At open",
+                allocation_dollars=1000, max_loss_dollars=500,
+                triggered_rules=["R9"], reasoning="Test", confidence="medium",
+            ),
+        ]
+        r18_signal = RuleSignal(
+            rule_id="R18", rule_name="Geopolitical Risk Escalation",
+            triggered=True, direction="short", confidence="medium",
+            win_rate=0.55, sample_size=0, current_value=8.0,
+            threshold=6.0, reasoning="Test",
+        )
+        result = _validate_and_fix_recommendations(
+            recs, {}, 5000, watchlist_scans=None,
+            active_signals=[r18_signal],
+        )
+        # Call allocations should be reduced by 25%
+        spy_rec = next(r for r in result if r.ticker == "SPY" and r.direction == "call")
+        assert spy_rec.allocation_dollars == 1500  # 2000 * 0.75
+
+        nvda_rec = next(r for r in result if r.ticker == "NVDA" and r.direction == "call")
+        assert nvda_rec.allocation_dollars == 750  # 1000 * 0.75
+
+        # Hedge should be present with R18 tag and 30% allocation
+        hedge = [r for r in result if r.direction == "put"]
+        assert len(hedge) >= 1
+        assert "R18" in hedge[0].triggered_rules
+        assert hedge[0].allocation_dollars == 1500  # 30% of 5000
+
+
+# ---------------------------------------------------------------------------
+# Priority weight tests
+# ---------------------------------------------------------------------------
+class TestComputeRuleWeight:
+    def test_perfect_rule(self):
+        """R4: (1.0, high, 7) → 1.00"""
+        assert compute_rule_weight(1.0, "high", 7) == 1.0
+
+    def test_strong_rule(self):
+        """R8: (0.86, high, 7) → 0.86"""
+        assert compute_rule_weight(0.86, "high", 7) == 0.86
+
+    def test_low_confidence(self):
+        """R3: (0.67, low, 3) → 0.1608"""
+        assert compute_rule_weight(0.67, "low", 3) == 0.1608
+
+    def test_failed_rule(self):
+        """R12: (0.33, failed, 3) → 0.0"""
+        assert compute_rule_weight(0.33, "failed", 3) == 0.0
+
+    def test_no_samples(self):
+        """R18: (0.55, medium, 0) → 0.0"""
+        assert compute_rule_weight(0.55, "medium", 0) == 0.0
+
+    def test_partial_samples(self):
+        """(1.0, high, 3) → 0.6"""
+        assert compute_rule_weight(1.0, "high", 3) == 0.6
+
+    def test_capped_samples(self):
+        """(1.0, high, 10) → 1.0 (sample factor caps at 1.0)"""
+        assert compute_rule_weight(1.0, "high", 10) == 1.0
+
+    def test_unknown_confidence(self):
+        """Unknown confidence string → 0.0"""
+        assert compute_rule_weight(1.0, "unknown", 5) == 0.0
+
+
+class TestWeightIntegration:
+    @pytest.fixture
+    def engine(self):
+        return RuleEngine()
+
+    @pytest.fixture
+    def snapshot(self):
+        return MarketSnapshot(
+            as_of="2026-02-25T08:15:00-06:00",
+            spy_price=684.50, spy_prev_close=687.35,
+            spy_premarket_change_pct=-0.41,
+            spy_5d_change_pct=-1.80, spy_20d_change_pct=-3.50,
+            spy_distance_from_20sma_pct=-0.90, spy_volume_ratio=1.15,
+            vix=21.30, vix_prev_close=19.55, vix_change=1.75,
+            us10y_yield=4.085, us10y_change_bps=-5.5,
+            dxy=97.80, dxy_change_pct=0.30, gap_pct=-0.41,
+        )
+
+    def test_all_weights_in_range(self, engine, snapshot):
+        """Every signal from evaluate_all has weight in [0.0, 1.0]."""
+        research = {"date": "2026-02-25", "events": [], "earnings": [], "headlines": []}
+        signals = engine.evaluate_all(snapshot, research)
+        for s in signals:
+            assert 0.0 <= s.weight <= 1.0, f"{s.rule_id} weight={s.weight} out of range"
+
+    def test_r4_gets_weight_1(self, engine, snapshot):
+        """R4 (100% win, high conf, 7 trades) should get weight 1.0."""
+        research = {"date": "2026-02-25", "events": [], "earnings": [], "headlines": []}
+        signals = engine.evaluate_all(snapshot, research)
+        r4 = next(s for s in signals if s.rule_id == "R4")
+        assert r4.weight == 1.0
+
+    def test_r12_gets_weight_0(self, engine, snapshot):
+        """R12 (failed confidence) should get weight 0.0."""
+        research = {"date": "2026-02-25", "events": [], "earnings": [], "headlines": []}
+        signals = engine.evaluate_all(snapshot, research)
+        r12 = next(s for s in signals if s.rule_id == "R12")
+        assert r12.weight == 0.0
+
+    def test_brief_contains_weight_column(self, engine, snapshot):
+        """Brief output contains Weight column header."""
+        research = {"date": "2026-02-25", "events": [], "earnings": [], "headlines": []}
+        signals = engine.evaluate_all(snapshot, research)
+        triggered = [s for s in signals if s.triggered and s.confidence != "failed"]
+
+        pack = RecommendationPack(
+            as_of="2026-02-25T08:15:00-06:00",
+            date="2026-02-25",
+            market_snapshot=snapshot,
+            active_signals=signals,
+            portfolio_summary=PortfolioSummary(
+                total_allocation=0, max_portfolio_risk=0,
+                num_trades=0, net_directional_bias="bullish",
+                rules_triggered_count=len(triggered),
+            ),
+        )
+        md = build_recommendation_brief(pack)
+        assert "| Weight |" in md

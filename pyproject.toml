@@ -17,7 +17,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["agent*"]
+include = ["agent*", "dip_hunter*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

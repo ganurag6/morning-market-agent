@@ -216,6 +216,8 @@ class OpenAIClient:
         triggered = [s for s in signals if s.get("triggered")]
         long_count = sum(1 for s in triggered if s.get("direction") == "long")
         short_count = sum(1 for s in triggered if s.get("direction") == "short")
+        long_weight = sum(s.get("weight", 0) for s in triggered if s.get("direction") == "long")
+        short_weight = sum(s.get("weight", 0) for s in triggered if s.get("direction") == "short")
 
         events_today = []
         for ev in research.get("events", []):
@@ -291,7 +293,7 @@ class OpenAIClient:
             f"Date: {research.get('date', 'unknown')}\n"
             f"Watchlist: {watchlist_text}\n\n"
             f"Market Snapshot:\n{json.dumps(snapshot, indent=2)}\n\n"
-            f"Active Signals ({len(triggered)} triggered, {long_count} long, {short_count} short):\n"
+            f"Active Signals ({len(triggered)} triggered, long_weight={long_weight:.2f}, short_weight={short_weight:.2f}):\n"
             f"{json.dumps(triggered, indent=2)}\n\n"
             f"Today's Events:\n{json.dumps(events_today, indent=2)}\n\n"
             f"Upcoming Earnings (next 5):\n{json.dumps(earnings_upcoming, indent=2)}\n\n"
@@ -314,7 +316,11 @@ class OpenAIClient:
             "8. Allocation per trade: $300-$500 (low confidence), $500-$1500 (medium), $1500-$2500 (high).\n"
             "9. Stop loss: 50% of premium paid.\n"
             "10. Take profit: 100-200% of premium paid.\n"
-            "11. If 3+ bullish signals, increase allocation. If mixed (long+short), reduce sizes.\n"
+            "11. Use signal weights to size trades proportionally. Higher-weight signals "
+            "(closer to 1.0) should receive larger allocations. Signals with weight < 0.3 "
+            "are low-conviction and should receive minimum sizing. "
+            "If total long_weight > 2.0, increase overall allocation. "
+            "If mixed (both long_weight and short_weight > 0.5), reduce sizes.\n"
             "12. MANDATORY hedge trade: include exactly one hedge trade in the opposite direction "
             "(e.g. SPY put if mostly bullish). Allocate 15-20% of total allocation to it. Non-negotiable.\n"
             "13. Include entry timing: 'at open' for gap plays, '9:45 AM CT' for pullback entries, "
@@ -335,7 +341,11 @@ class OpenAIClient:
             "reduce long exposure on that ticker. If a mega-cap has upcoming earnings after close, "
             "use smaller sizing on that ticker's positions (binary event risk).\n"
             "24. ALL-BULLISH CONTRARIAN (R17): If flagged, acknowledge one-directional positioning "
-            "risk. The hedge allocation is enforced to 20% in post-processing — do NOT reduce it.\n\n"
+            "risk. The hedge allocation is enforced to 20% in post-processing — do NOT reduce it.\n"
+            "25. GEOPOLITICAL RISK (R18): If a geopolitical risk signal is active, reduce "
+            "long conviction, prefer defensive tickers, increase hedge sizing, and note "
+            "the geopolitical uncertainty in each trade's reasoning. Do NOT aggressively "
+            "buy the dip when the cause is ongoing military conflict or sanctions escalation.\n\n"
             "Return ONLY valid JSON matching this schema (no markdown, no code fences):\n"
             f"{schema}\n"
         )

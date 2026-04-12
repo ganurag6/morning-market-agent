@@ -41,6 +41,7 @@ class RuleSignal(BaseModel):
     threshold: Optional[float] = None
     target_ticker: Optional[str] = None
     reasoning: str
+    weight: float = 0.0
 
 
 class TradeRecommendation(BaseModel):
@@ -80,7 +81,7 @@ class PortfolioSummary(BaseModel):
     num_trades: int
     net_directional_bias: Literal["bullish", "bearish", "neutral"]
     rules_triggered_count: int
-    rules_total_count: int = 17
+    rules_total_count: int = 18
 
 
 class RecommendationPack(BaseModel):

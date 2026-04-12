@@ -179,6 +179,11 @@ def _collect_search_bundle(
             "query": f"stock market breadth NYSE advancers decliners S&P 500 sector performance best worst sectors {date_str}",
             "recency": "week",
         },
+        {
+            "name": "geopolitical",
+            "query": "geopolitical risk military conflict sanctions trade war oil supply disruption market impact",
+            "recency": "day",
+        },
     ]
 
     client = PerplexityClient()

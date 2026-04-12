@@ -33,6 +33,24 @@ HISTORY_PATH = ROOT / "data" / "macro_spy_reactions.csv"
 
 
 # ---------------------------------------------------------------------------
+# Priority weight computation
+# ---------------------------------------------------------------------------
+CONFIDENCE_MULTIPLIER = {
+    "high": 1.0,
+    "medium": 0.7,
+    "low": 0.4,
+    "failed": 0.0,
+}
+
+
+def compute_rule_weight(win_rate: float, confidence: str, sample_size: int) -> float:
+    """Derive a priority weight (0.0–1.0) from a rule's backtest stats."""
+    conf_mult = CONFIDENCE_MULTIPLIER.get(confidence, 0.0)
+    sample_factor = min(sample_size / 5.0, 1.0)
+    return round(win_rate * conf_mult * sample_factor, 4)
+
+
+# ---------------------------------------------------------------------------
 # Market Data Fetcher
 # ---------------------------------------------------------------------------
 class MarketDataFetcher:
@@ -407,7 +425,7 @@ class MarketDataFetcher:
 # Rule Engine
 # ---------------------------------------------------------------------------
 class RuleEngine:
-    """Evaluate the 17 backtested trading rules against current conditions."""
+    """Evaluate the 18 backtested trading rules against current conditions."""
 
     def __init__(self, rules_path: Path = RULES_PATH):
         with open(rules_path) as f:
@@ -444,6 +462,11 @@ class RuleEngine:
                         reasoning=f"No evaluator for condition_type={ctype}",
                     )
                 )
+
+        # Compute priority weights for all signals
+        for sig in signals:
+            sig.weight = compute_rule_weight(sig.win_rate, sig.confidence, sig.sample_size)
+
         return signals
 
     def _get_evaluator(self, condition_type: str):
@@ -466,6 +489,7 @@ class RuleEngine:
             "sell_the_news": self._eval_sell_the_news,
             "megacap_earnings_vol": self._eval_megacap_earnings_vol,
             "all_bullish_contrarian": self._eval_all_bullish_contrarian,
+            "geopolitical_risk": self._eval_geopolitical_risk,
         }
         return dispatch.get(condition_type)
 
@@ -1094,6 +1118,83 @@ class RuleEngine:
             ),
         )
 
+    def _eval_geopolitical_risk(self, rule, snapshot, research, history, watchlist_scans):
+        """R18: Geopolitical Risk Escalation.
+
+        Scans headlines and weekly_context themes for geopolitical keywords.
+        Scores each match weighted by impact (high=3, medium=2, low=1).
+        Oil spike >threshold adds a bonus. Triggered if score >= threshold.
+        """
+        keywords = [kw.lower() for kw in rule.get("geopolitical_keywords", [])]
+        threshold_score = rule.get("threshold_headline_score", 6)
+        oil_spike_thresh = rule.get("threshold_oil_spike_pct", 3.0)
+
+        score = 0
+        matches = []
+
+        # Scan headlines
+        headlines = research.get("headlines", [])
+        for hl in headlines:
+            title = (hl.get("title") or "").lower()
+            take = (hl.get("one_line_take") or "").lower()
+            impact = (hl.get("impact") or "low").lower()
+            weight = {"high": 3, "medium": 2, "low": 1}.get(impact, 1)
+            text = f"{title} {take}"
+            for kw in keywords:
+                if kw in text:
+                    score += weight
+                    matches.append(f"{kw} ({impact})")
+                    break  # one match per headline
+
+        # Scan weekly_context themes
+        weekly = research.get("weekly_context", {})
+        for theme_obj in weekly.get("themes", []):
+            theme_text = (theme_obj.get("theme") or "").lower()
+            evidence_texts = " ".join(
+                (e or "").lower() for e in theme_obj.get("evidence", [])
+            )
+            combined = f"{theme_text} {evidence_texts}"
+            for kw in keywords:
+                if kw in combined:
+                    score += 2  # themes are medium weight
+                    matches.append(f"{kw} (theme)")
+                    break
+
+        # Oil spike reinforcement
+        oil_bonus = False
+        market_state = research.get("market_state", {})
+        rfx = market_state.get("rates_fx_oil", {})
+        wti_change_str = rfx.get("wti_change", "")
+        try:
+            wti_val = float(str(wti_change_str).replace("%", "").replace("+", "").strip())
+            if wti_val > oil_spike_thresh:
+                score += 3
+                oil_bonus = True
+                matches.append(f"oil +{wti_val:.1f}%")
+        except (ValueError, TypeError):
+            pass
+
+        triggered = score >= threshold_score
+        return RuleSignal(
+            rule_id=rule["id"],
+            rule_name=rule["name"],
+            triggered=triggered,
+            direction="short",
+            confidence=rule.get("confidence", "medium"),
+            win_rate=rule.get("win_rate", 0.55),
+            sample_size=rule.get("sample_size", 0),
+            current_value=float(score),
+            threshold=float(threshold_score),
+            reasoning=(
+                f"Geopolitical risk score: {score} (threshold: {threshold_score}). "
+                f"Matches: {', '.join(matches[:8]) if matches else 'none'}. "
+                + (f"Oil spike reinforcement active. " if oil_bonus else "")
+                + ("GEOPOLITICAL RISK ELEVATED — reduce long exposure, increase hedges."
+                   if triggered
+                   else "Geopolitical risk within normal range.")
+            ),
+        )
+
 
 # ---------------------------------------------------------------------------
 # Markdown brief builder
@@ -1158,8 +1259,8 @@ def build_recommendation_brief(rec_pack: RecommendationPack) -> str:
 
     if spy_triggers:
         lines.extend([
-            "| Rule | Signal | Confidence | Detail |",
-            "|------|--------|------------|--------|",
+            "| Rule | Signal | Confidence | Weight | Detail |",
+            "|------|--------|------------|--------|--------|",
         ])
         for s in spy_triggers:
             direction = "BUY" if s.direction == "long" else "SHORT"
@@ -1167,7 +1268,7 @@ def build_recommendation_brief(rec_pack: RecommendationPack) -> str:
             thresh_str = f" (threshold: {s.threshold})" if s.threshold is not None else ""
             lines.append(
                 f"| {s.rule_id} {s.rule_name} | {direction} | "
-                f"{s.confidence.upper()} | {val_str}{thresh_str} — "
+                f"{s.confidence.upper()} | {s.weight:.2f} | {val_str}{thresh_str} — "
                 f"{s.win_rate*100:.0f}% win rate, {s.sample_size} trades |"
             )
     elif not ticker_triggers:
@@ -1189,12 +1290,14 @@ def build_recommendation_brief(rec_pack: RecommendationPack) -> str:
         for s in failed_triggers:
             lines.append(f"- {s.rule_id} {s.rule_name}: {s.reasoning}")
 
-    # Confluence summary
+    # Confluence summary with weighted sums
     long_count = sum(1 for s in active_triggers if s.direction == "long")
     short_count = sum(1 for s in active_triggers if s.direction == "short")
     neutral_count = sum(1 for s in active_triggers if s.direction == "neutral")
+    long_wt = sum(s.weight for s in active_triggers if s.direction == "long")
+    short_wt = sum(s.weight for s in active_triggers if s.direction == "short")
     if active_triggers:
-        confluence = f"**Confluence: {long_count} bullish, {short_count} bearish"
+        confluence = f"**Confluence: {long_count} bullish (weight {long_wt:.2f}), {short_count} bearish (weight {short_wt:.2f})"
         if neutral_count:
             confluence += f", {neutral_count} neutral"
         confluence += " signals.**"
@@ -1286,13 +1389,61 @@ def _validate_and_fix_recommendations(
                 "Enforcing 20%% hedge."
             )
 
+    # --- R18: Geopolitical Risk Escalation ---
+    r18_triggered = False
+    if active_signals:
+        for sig in active_signals:
+            if sig.rule_id == "R18" and sig.triggered:
+                r18_triggered = True
+                break
+    if r18_triggered:
+        logger.warning(
+            "R18 GEOPOLITICAL RISK: Elevated geopolitical risk detected. "
+            "Scaling down long allocations by 25%% and increasing hedge to 30%%."
+        )
+        for rec in recs:
+            if rec.direction == "call":
+                rec.allocation_dollars = round(rec.allocation_dollars * 0.75)
+                rec.max_loss_dollars = round(rec.max_loss_dollars * 0.75)
+
+    # --- Weight-based allocation scaling ---
+    if active_signals:
+        weight_by_rule = {s.rule_id: s.weight for s in active_signals}
+        for rec in recs:
+            rule_weights = [
+                weight_by_rule[r] for r in rec.triggered_rules
+                if r in weight_by_rule
+            ]
+            if rule_weights:
+                avg_weight = sum(rule_weights) / len(rule_weights)
+                scale_factor = 0.5 + 0.5 * avg_weight
+                rec.allocation_dollars = round(rec.allocation_dollars * scale_factor)
+                rec.max_loss_dollars = round(rec.max_loss_dollars * scale_factor)
+
     # --- Hedge enforcement ---
     directions = {r.direction for r in recs}
     if len(directions) == 1:
         # All same direction — inject hedge
         hedge_direction = "put" if "call" in directions else "call"
-        # R17: bump hedge to 20% if contrarian warning triggered
-        hedge_pct = 0.20 if r17_triggered else 0.175
+        # R18: 30% hedge overrides R17's 20% and weight-based default
+        if r18_triggered:
+            hedge_pct = 0.30
+        elif r17_triggered:
+            hedge_pct = 0.20
+        else:
+            # Dynamic hedge sizing based on aggregate signal weight
+            agg_weight = 0.0
+            if active_signals:
+                agg_weight = sum(
+                    s.weight for s in active_signals
+                    if s.triggered and s.confidence != "failed"
+                )
+            if agg_weight >= 3.0:
+                hedge_pct = 0.125  # high conviction → smaller hedge
+            elif agg_weight >= 1.5:
+                hedge_pct = 0.175  # moderate conviction
+            else:
+                hedge_pct = 0.225  # low conviction → larger hedge
         hedge_alloc = round(max_allocation * hedge_pct)
         hedge_max_loss = round(hedge_alloc * 0.5)
 
@@ -1310,7 +1461,17 @@ def _validate_and_fix_recommendations(
             f"{'bullish' if hedge_direction == 'put' else 'bearish'}. "
             f"This {hedge_direction} limits downside if thesis is wrong."
         )
-        if r17_triggered:
+        if r18_triggered:
+            hedge_rules.append("R18")
+            hedge_reasoning = (
+                "GEOPOLITICAL RISK (R18): Elevated geopolitical risk detected in headlines. "
+                "Long allocations reduced by 25%. "
+                f"Mandatory {hedge_pct*100:.0f}% hedge enforced. "
+                f"This {hedge_direction} protects against ongoing geopolitical uncertainty."
+            )
+            if r17_triggered:
+                hedge_rules.append("R17")
+        elif r17_triggered:
             hedge_rules.append("R17")
             hedge_reasoning = (
                 "CONTRARIAN WARNING (R17): All watchlist scans show bullish signals "
@@ -1673,12 +1834,12 @@ def run_recommendations(
     total_alloc = sum(r.allocation_dollars for r in recs)
     max_risk = sum(r.max_loss_dollars for r in recs)
     triggered_signals = [s for s in signals if s.triggered and s.confidence != "failed"]
-    long_count = sum(1 for s in triggered_signals if s.direction == "long")
-    short_count = sum(1 for s in triggered_signals if s.direction == "short")
+    long_weight = sum(s.weight for s in triggered_signals if s.direction == "long")
+    short_weight = sum(s.weight for s in triggered_signals if s.direction == "short")
 
-    if long_count > short_count:
+    if long_weight > short_weight:
         bias = "bullish"
-    elif short_count > long_count:
+    elif short_weight > long_weight:
         bias = "bearish"
     else:
         bias = "neutral"
