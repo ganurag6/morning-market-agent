@@ -31,5 +31,29 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-04-13",
+    "picks": [
+      {
+        "ticker": "SNOW",
+        "price": 128.6,
+        "confidence": 71,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.4,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "PLTR",
+        "price": 133.24,
+        "confidence": 63,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.34,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
