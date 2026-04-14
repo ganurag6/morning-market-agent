@@ -55,5 +55,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-04-14",
+    "picks": [
+      {
+        "ticker": "SNOW",
+        "price": 136.11,
+        "confidence": 67,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.1,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "PLTR",
+        "price": 136.51,
+        "confidence": 59,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.28,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "XOM",
+        "price": 148.06,
+        "confidence": 57,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.06,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
