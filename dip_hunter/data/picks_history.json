@@ -121,5 +121,20 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-04-16",
+    "picks": [
+      {
+        "ticker": "SNOW",
+        "price": 146.7,
+        "confidence": 60,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.05,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
