@@ -136,5 +136,29 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-04-17",
+    "picks": [
+      {
+        "ticker": "XOM",
+        "price": 142.31,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.36,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "COP",
+        "price": 112.43,
+        "confidence": 62,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.23,
+        "tier": "B",
+        "expected_bounce": "+8-17% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
