@@ -160,5 +160,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-04-20",
+    "picks": [
+      {
+        "ticker": "XOM",
+        "price": 149.01,
+        "confidence": 61,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.08,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "COP",
+        "price": 117.83,
+        "confidence": 55,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.04,
+        "tier": "B",
+        "expected_bounce": "+8-17% in 20-40 days"
+      },
+      {
+        "ticker": "LMT",
+        "price": 584.91,
+        "confidence": 45,
+        "confidence_level": "LOW",
+        "dip_score": 5.97,
+        "tier": "B",
+        "expected_bounce": "+8-20% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
