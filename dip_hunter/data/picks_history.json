@@ -193,5 +193,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-04-21",
+    "picks": [
+      {
+        "ticker": "XOM",
+        "price": 147.18,
+        "confidence": 64,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.74,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "MRK",
+        "price": 112.21,
+        "confidence": 58,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.18,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "COP",
+        "price": 117.51,
+        "confidence": 55,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.19,
+        "tier": "B",
+        "expected_bounce": "+8-17% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
