@@ -259,5 +259,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-04-23",
+    "picks": [
+      {
+        "ticker": "LMT",
+        "price": 531.03,
+        "confidence": 64,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.43,
+        "tier": "B",
+        "expected_bounce": "+8-20% in 20-40 days"
+      },
+      {
+        "ticker": "RTX",
+        "price": 181.04,
+        "confidence": 60,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.34,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "XOM",
+        "price": 148.74,
+        "confidence": 60,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.64,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
