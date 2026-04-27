@@ -325,5 +325,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-04-27",
+    "picks": [
+      {
+        "ticker": "RTX",
+        "price": 174.08,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.18,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "MRK",
+        "price": 111.44,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.69,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "XOM",
+        "price": 149.35,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.13,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
