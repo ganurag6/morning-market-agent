@@ -424,5 +424,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-04-30",
+    "picks": [
+      {
+        "ticker": "MRK",
+        "price": 110.41,
+        "confidence": 72,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.89,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "RTX",
+        "price": 175.07,
+        "confidence": 67,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.21,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "LMT",
+        "price": 509.5,
+        "confidence": 64,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.75,
+        "tier": "B",
+        "expected_bounce": "+8-20% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
