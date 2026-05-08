@@ -613,5 +613,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-05-08",
+    "picks": [
+      {
+        "ticker": "RTX",
+        "price": 175.86,
+        "confidence": 68,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.48,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "LMT",
+        "price": 508.33,
+        "confidence": 64,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.86,
+        "tier": "B",
+        "expected_bounce": "+8-20% in 20-40 days"
+      },
+      {
+        "ticker": "TMO",
+        "price": 464.14,
+        "confidence": 59,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.55,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
