@@ -679,5 +679,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-05-12",
+    "picks": [
+      {
+        "ticker": "TMO",
+        "price": 459.83,
+        "confidence": 70,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.76,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "LMT",
+        "price": 515.66,
+        "confidence": 60,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.48,
+        "tier": "B",
+        "expected_bounce": "+8-20% in 20-40 days"
+      },
+      {
+        "ticker": "META",
+        "price": 599.72,
+        "confidence": 58,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.81,
+        "tier": "B",
+        "expected_bounce": "+8-14% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
