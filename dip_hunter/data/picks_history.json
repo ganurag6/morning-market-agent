@@ -712,5 +712,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-05-13",
+    "picks": [
+      {
+        "ticker": "TMO",
+        "price": 446.42,
+        "confidence": 67,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.57,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "CEG",
+        "price": 276.52,
+        "confidence": 56,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.36,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "PLTR",
+        "price": 130.28,
+        "confidence": 56,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.12,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
