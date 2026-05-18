@@ -811,5 +811,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-05-18",
+    "picks": [
+      {
+        "ticker": "TMO",
+        "price": 439.47,
+        "confidence": 70,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.61,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "CEG",
+        "price": 261.64,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.2,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "VST",
+        "price": 135.13,
+        "confidence": 62,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.4,
+        "tier": "B",
+        "expected_bounce": "+8-13% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
