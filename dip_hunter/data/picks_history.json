@@ -877,5 +877,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-05-20",
+    "picks": [
+      {
+        "ticker": "TMO",
+        "price": 445.71,
+        "confidence": 69,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.0,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "NEE",
+        "price": 88.79,
+        "confidence": 52,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.87,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      },
+      {
+        "ticker": "VST",
+        "price": 143.05,
+        "confidence": 51,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.28,
+        "tier": "B",
+        "expected_bounce": "+8-13% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
