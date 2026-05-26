@@ -1009,5 +1009,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-05-26",
+    "picks": [
+      {
+        "ticker": "NEE",
+        "price": 87.94,
+        "confidence": 59,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.68,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      },
+      {
+        "ticker": "WMT",
+        "price": 118.68,
+        "confidence": 58,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.99,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      },
+      {
+        "ticker": "DE",
+        "price": 526.85,
+        "confidence": 55,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.49,
+        "tier": "B",
+        "expected_bounce": "+8-17% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
