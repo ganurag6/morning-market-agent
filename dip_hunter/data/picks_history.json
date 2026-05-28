@@ -1075,5 +1075,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-05-28",
+    "picks": [
+      {
+        "ticker": "WMT",
+        "price": 118.18,
+        "confidence": 59,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.16,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      },
+      {
+        "ticker": "DE",
+        "price": 538.15,
+        "confidence": 51,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.31,
+        "tier": "B",
+        "expected_bounce": "+8-17% in 20-40 days"
+      },
+      {
+        "ticker": "COP",
+        "price": 114.79,
+        "confidence": 47,
+        "confidence_level": "LOW",
+        "dip_score": 6.49,
+        "tier": "B",
+        "expected_bounce": "+8-17% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
