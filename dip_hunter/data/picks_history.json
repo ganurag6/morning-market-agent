@@ -1174,5 +1174,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-02",
+    "picks": [
+      {
+        "ticker": "WMT",
+        "price": 113.39,
+        "confidence": 68,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.67,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      },
+      {
+        "ticker": "CEG",
+        "price": 273.87,
+        "confidence": 64,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.83,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "NEE",
+        "price": 85.47,
+        "confidence": 63,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.95,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
