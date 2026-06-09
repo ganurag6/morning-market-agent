@@ -1339,5 +1339,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-09",
+    "picks": [
+      {
+        "ticker": "AVGO",
+        "price": 373.53,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.8,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "CEG",
+        "price": 247.78,
+        "confidence": 64,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.8,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "NEE",
+        "price": 84.81,
+        "confidence": 58,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.07,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
