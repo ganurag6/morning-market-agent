@@ -1372,5 +1372,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-10",
+    "picks": [
+      {
+        "ticker": "CEG",
+        "price": 243.34,
+        "confidence": 71,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.15,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "AVGO",
+        "price": 372.92,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.91,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "WMT",
+        "price": 119.67,
+        "confidence": 60,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.58,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
