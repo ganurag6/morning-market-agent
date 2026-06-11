@@ -1405,5 +1405,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-11",
+    "picks": [
+      {
+        "ticker": "CEG",
+        "price": 243.77,
+        "confidence": 68,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.4,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "SMCI",
+        "price": 30.33,
+        "confidence": 67,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.85,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "GOOGL",
+        "price": 347.45,
+        "confidence": 66,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.99,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
