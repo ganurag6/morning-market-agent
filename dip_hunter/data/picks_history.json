@@ -1438,5 +1438,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-12",
+    "picks": [
+      {
+        "ticker": "CEG",
+        "price": 251.43,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.9,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      },
+      {
+        "ticker": "AVGO",
+        "price": 380.34,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.42,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "SMCI",
+        "price": 30.54,
+        "confidence": 63,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.51,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
