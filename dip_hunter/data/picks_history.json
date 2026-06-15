@@ -1471,5 +1471,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-15",
+    "picks": [
+      {
+        "ticker": "XOM",
+        "price": 141.34,
+        "confidence": 59,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.13,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "SMCI",
+        "price": 31.09,
+        "confidence": 53,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.0,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "COP",
+        "price": 112.59,
+        "confidence": 48,
+        "confidence_level": "LOW",
+        "dip_score": 6.19,
+        "tier": "B",
+        "expected_bounce": "+8-17% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
