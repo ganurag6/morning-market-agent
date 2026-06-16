@@ -1504,5 +1504,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-16",
+    "picks": [
+      {
+        "ticker": "AVGO",
+        "price": 380.22,
+        "confidence": 62,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.91,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "XOM",
+        "price": 140.93,
+        "confidence": 59,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.77,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "SMCI",
+        "price": 30.02,
+        "confidence": 58,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.65,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
