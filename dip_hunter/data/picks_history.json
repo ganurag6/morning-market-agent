@@ -1561,5 +1561,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-18",
+    "picks": [
+      {
+        "ticker": "SMCI",
+        "price": 30.49,
+        "confidence": 72,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.71,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "XOM",
+        "price": 136.73,
+        "confidence": 60,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.1,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "PLTR",
+        "price": 128.06,
+        "confidence": 60,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.42,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
