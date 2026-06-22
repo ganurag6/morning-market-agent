@@ -1594,5 +1594,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-22",
+    "picks": [
+      {
+        "ticker": "PLTR",
+        "price": 120.6,
+        "confidence": 67,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.33,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "XOM",
+        "price": 138.15,
+        "confidence": 63,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.21,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "ORCL",
+        "price": 176.15,
+        "confidence": 60,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.13,
+        "tier": "B",
+        "expected_bounce": "+8-14% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
