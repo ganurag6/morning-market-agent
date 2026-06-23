@@ -1627,5 +1627,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-23",
+    "picks": [
+      {
+        "ticker": "PLTR",
+        "price": 119.07,
+        "confidence": 67,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.4,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "AVGO",
+        "price": 381.7,
+        "confidence": 66,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.68,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "ORCL",
+        "price": 169.28,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.4,
+        "tier": "B",
+        "expected_bounce": "+8-14% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
