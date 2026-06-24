@@ -1660,5 +1660,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-24",
+    "picks": [
+      {
+        "ticker": "SMCI",
+        "price": 33.04,
+        "confidence": 73,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.25,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "PLTR",
+        "price": 114.33,
+        "confidence": 70,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.4,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "ORCL",
+        "price": 159.62,
+        "confidence": 69,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.4,
+        "tier": "B",
+        "expected_bounce": "+8-14% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
