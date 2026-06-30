@@ -1792,5 +1792,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-06-30",
+    "picks": [
+      {
+        "ticker": "SMCI",
+        "price": 29.55,
+        "confidence": 77,
+        "confidence_level": "HIGH",
+        "dip_score": 7.76,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "ORCL",
+        "price": 145.65,
+        "confidence": 70,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.4,
+        "tier": "B",
+        "expected_bounce": "+8-14% in 20-40 days"
+      },
+      {
+        "ticker": "AVGO",
+        "price": 376.49,
+        "confidence": 66,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.29,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
