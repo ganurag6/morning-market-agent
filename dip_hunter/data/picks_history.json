@@ -1891,5 +1891,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-07-03",
+    "picks": [
+      {
+        "ticker": "SMCI",
+        "price": 27.22,
+        "confidence": 74,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.82,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "HPE",
+        "price": 41.23,
+        "confidence": 73,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.73,
+        "tier": "B",
+        "expected_bounce": "+8-20% in 20-40 days"
+      },
+      {
+        "ticker": "ORCL",
+        "price": 140.27,
+        "confidence": 72,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.7,
+        "tier": "B",
+        "expected_bounce": "+8-14% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
