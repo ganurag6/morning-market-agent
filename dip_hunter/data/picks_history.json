@@ -2056,5 +2056,29 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-07-10",
+    "picks": [
+      {
+        "ticker": "ORCL",
+        "price": 141.28,
+        "confidence": 70,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.6,
+        "tier": "B",
+        "expected_bounce": "+8-14% in 20-40 days"
+      },
+      {
+        "ticker": "MRVL",
+        "price": 235.88,
+        "confidence": 70,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.56,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
