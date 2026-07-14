@@ -2113,5 +2113,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-07-14",
+    "picks": [
+      {
+        "ticker": "MRVL",
+        "price": 224.13,
+        "confidence": 77,
+        "confidence_level": "HIGH",
+        "dip_score": 6.84,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "SMCI",
+        "price": 27.67,
+        "confidence": 73,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.6,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "ORCL",
+        "price": 129.3,
+        "confidence": 70,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.4,
+        "tier": "B",
+        "expected_bounce": "+8-14% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
