@@ -2179,5 +2179,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-07-16",
+    "picks": [
+      {
+        "ticker": "MU",
+        "price": 853.21,
+        "confidence": 81,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "MRVL",
+        "price": 190.44,
+        "confidence": 80,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "SMCI",
+        "price": 25.35,
+        "confidence": 78,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
