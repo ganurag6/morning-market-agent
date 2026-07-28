@@ -2443,5 +2443,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-07-28",
+    "picks": [
+      {
+        "ticker": "CAT",
+        "price": 832.41,
+        "confidence": 81,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-35% in 20-40 days"
+      },
+      {
+        "ticker": "MRVL",
+        "price": 177.66,
+        "confidence": 79,
+        "confidence_level": "HIGH",
+        "dip_score": 8.24,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "TSM",
+        "price": 390.79,
+        "confidence": 78,
+        "confidence_level": "HIGH",
+        "dip_score": 8.31,
+        "tier": "A",
+        "expected_bounce": "+10-28% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
