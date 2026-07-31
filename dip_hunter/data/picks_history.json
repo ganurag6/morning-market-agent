@@ -2542,5 +2542,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-07-31",
+    "picks": [
+      {
+        "ticker": "CAT",
+        "price": 817.15,
+        "confidence": 78,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-35% in 20-40 days"
+      },
+      {
+        "ticker": "MRVL",
+        "price": 190.6,
+        "confidence": 74,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.56,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "AMAT",
+        "price": 512.49,
+        "confidence": 72,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.33,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
