@@ -2575,5 +2575,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-03",
+    "picks": [
+      {
+        "ticker": "CAT",
+        "price": 823.26,
+        "confidence": 78,
+        "confidence_level": "HIGH",
+        "dip_score": 8.22,
+        "tier": "A",
+        "expected_bounce": "+10-35% in 20-40 days"
+      },
+      {
+        "ticker": "MRVL",
+        "price": 190.38,
+        "confidence": 75,
+        "confidence_level": "HIGH",
+        "dip_score": 5.22,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "MU",
+        "price": 816.18,
+        "confidence": 73,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.92,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
