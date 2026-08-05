@@ -2641,5 +2641,20 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-05",
+    "picks": [
+      {
+        "ticker": "VST",
+        "price": 141.35,
+        "confidence": 49,
+        "confidence_level": "LOW",
+        "dip_score": 5.25,
+        "tier": "B",
+        "expected_bounce": "+8-13% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
