@@ -2671,5 +2671,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-07",
+    "picks": [
+      {
+        "ticker": "CAT",
+        "price": 837.58,
+        "confidence": 67,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.0,
+        "tier": "A",
+        "expected_bounce": "+10-35% in 20-40 days"
+      },
+      {
+        "ticker": "MU",
+        "price": 858.74,
+        "confidence": 66,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.0,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "VST",
+        "price": 137.7,
+        "confidence": 56,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.23,
+        "tier": "B",
+        "expected_bounce": "+8-13% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
