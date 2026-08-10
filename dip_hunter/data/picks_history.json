@@ -2704,5 +2704,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-10",
+    "picks": [
+      {
+        "ticker": "AMD",
+        "price": 479.3,
+        "confidence": 69,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.33,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "NEE",
+        "price": 84.39,
+        "confidence": 54,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.04,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      },
+      {
+        "ticker": "VST",
+        "price": 144.7,
+        "confidence": 51,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.91,
+        "tier": "B",
+        "expected_bounce": "+8-13% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
