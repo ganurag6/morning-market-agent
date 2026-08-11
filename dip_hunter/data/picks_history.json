@@ -2737,5 +2737,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-11",
+    "picks": [
+      {
+        "ticker": "AMD",
+        "price": 468.05,
+        "confidence": 74,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.22,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "MU",
+        "price": 860.62,
+        "confidence": 69,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.82,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "GS",
+        "price": 1031.06,
+        "confidence": 69,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.44,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
