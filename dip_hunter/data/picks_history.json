@@ -2770,5 +2770,29 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-12",
+    "picks": [
+      {
+        "ticker": "VST",
+        "price": 147.18,
+        "confidence": 53,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.73,
+        "tier": "B",
+        "expected_bounce": "+8-13% in 20-40 days"
+      },
+      {
+        "ticker": "GOOGL",
+        "price": 343.36,
+        "confidence": 47,
+        "confidence_level": "LOW",
+        "dip_score": 5.23,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
