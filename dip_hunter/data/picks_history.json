@@ -2794,5 +2794,29 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-14",
+    "picks": [
+      {
+        "ticker": "AAPL",
+        "price": 304.93,
+        "confidence": 58,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.96,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "AMAT",
+        "price": 508.75,
+        "confidence": 56,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.68,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
