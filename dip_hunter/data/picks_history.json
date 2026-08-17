@@ -2818,5 +2818,20 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-17",
+    "picks": [
+      {
+        "ticker": "META",
+        "price": 578.92,
+        "confidence": 48,
+        "confidence_level": "LOW",
+        "dip_score": 5.0,
+        "tier": "B",
+        "expected_bounce": "+8-14% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
