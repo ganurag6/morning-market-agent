@@ -2881,5 +2881,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-20",
+    "picks": [
+      {
+        "ticker": "AMD",
+        "price": 467.66,
+        "confidence": 67,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.95,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "AMAT",
+        "price": 495.84,
+        "confidence": 66,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.8,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "CAT",
+        "price": 811.54,
+        "confidence": 63,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.51,
+        "tier": "A",
+        "expected_bounce": "+10-35% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
