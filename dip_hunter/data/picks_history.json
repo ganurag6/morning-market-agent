@@ -2914,5 +2914,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-21",
+    "picks": [
+      {
+        "ticker": "AMD",
+        "price": 469.57,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.61,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "AMAT",
+        "price": 487.99,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.08,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "VST",
+        "price": 138.13,
+        "confidence": 62,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.4,
+        "tier": "B",
+        "expected_bounce": "+8-13% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
