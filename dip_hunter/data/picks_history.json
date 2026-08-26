@@ -3013,5 +3013,29 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-26",
+    "picks": [
+      {
+        "ticker": "AVGO",
+        "price": 352.6,
+        "confidence": 66,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.18,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "WMT",
+        "price": 105.08,
+        "confidence": 56,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.05,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
