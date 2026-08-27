@@ -3037,5 +3037,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-27",
+    "picks": [
+      {
+        "ticker": "AVGO",
+        "price": 371.54,
+        "confidence": 64,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.27,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "AMAT",
+        "price": 482.36,
+        "confidence": 63,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.44,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "WMT",
+        "price": 102.63,
+        "confidence": 58,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.83,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
