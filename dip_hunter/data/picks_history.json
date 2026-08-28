@@ -3070,5 +3070,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-28",
+    "picks": [
+      {
+        "ticker": "AMAT",
+        "price": 461.67,
+        "confidence": 71,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.91,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "AVGO",
+        "price": 368.79,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.45,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "NEE",
+        "price": 81.84,
+        "confidence": 59,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.1,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
