@@ -3103,5 +3103,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-08-31",
+    "picks": [
+      {
+        "ticker": "AMAT",
+        "price": 456.99,
+        "confidence": 72,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.0,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "AVGO",
+        "price": 369.47,
+        "confidence": 65,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.42,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "GOOGL",
+        "price": 338.66,
+        "confidence": 57,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.48,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
