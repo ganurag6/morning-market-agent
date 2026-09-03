@@ -3202,5 +3202,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-09-03",
+    "picks": [
+      {
+        "ticker": "AMAT",
+        "price": 435.86,
+        "confidence": 82,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "AVGO",
+        "price": 357.14,
+        "confidence": 78,
+        "confidence_level": "HIGH",
+        "dip_score": 8.42,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      },
+      {
+        "ticker": "AMD",
+        "price": 457.21,
+        "confidence": 70,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.93,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
