@@ -3367,5 +3367,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-09-10",
+    "picks": [
+      {
+        "ticker": "AMAT",
+        "price": 457.71,
+        "confidence": 76,
+        "confidence_level": "HIGH",
+        "dip_score": 6.04,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "LLY",
+        "price": 1127.94,
+        "confidence": 68,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.08,
+        "tier": "B",
+        "expected_bounce": "+8-23% in 20-40 days"
+      },
+      {
+        "ticker": "RTX",
+        "price": 197.64,
+        "confidence": 68,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.63,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
