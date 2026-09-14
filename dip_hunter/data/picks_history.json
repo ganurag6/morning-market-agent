@@ -3433,5 +3433,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-09-14",
+    "picks": [
+      {
+        "ticker": "AMAT",
+        "price": 428.37,
+        "confidence": 77,
+        "confidence_level": "HIGH",
+        "dip_score": 8.13,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "RTX",
+        "price": 194.4,
+        "confidence": 69,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.2,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "AVGO",
+        "price": 346.21,
+        "confidence": 64,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.98,
+        "tier": "B",
+        "expected_bounce": "+8-22% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
