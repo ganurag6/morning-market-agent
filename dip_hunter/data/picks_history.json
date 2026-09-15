@@ -3466,5 +3466,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-09-15",
+    "picks": [
+      {
+        "ticker": "AMAT",
+        "price": 417.8,
+        "confidence": 80,
+        "confidence_level": "HIGH",
+        "dip_score": 8.33,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "GS",
+        "price": 960.62,
+        "confidence": 70,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.82,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "MS",
+        "price": 202.65,
+        "confidence": 68,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.87,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
