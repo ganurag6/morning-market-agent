@@ -3598,5 +3598,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-09-21",
+    "picks": [
+      {
+        "ticker": "RTX",
+        "price": 194.75,
+        "confidence": 63,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.57,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "GS",
+        "price": 959.23,
+        "confidence": 61,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.39,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "NEE",
+        "price": 79.68,
+        "confidence": 52,
+        "confidence_level": "MEDIUM",
+        "dip_score": 5.13,
+        "tier": "B",
+        "expected_bounce": "+8-15% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
