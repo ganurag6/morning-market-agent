@@ -3763,5 +3763,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-09-28",
+    "picks": [
+      {
+        "ticker": "MS",
+        "price": 193.67,
+        "confidence": 71,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.63,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "GS",
+        "price": 916.55,
+        "confidence": 70,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.55,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "RTX",
+        "price": 187.63,
+        "confidence": 67,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.46,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
