@@ -3862,5 +3862,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-10-01",
+    "picks": [
+      {
+        "ticker": "MS",
+        "price": 186.64,
+        "confidence": 74,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.82,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "GS",
+        "price": 894.44,
+        "confidence": 71,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.03,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "CEG",
+        "price": 257.2,
+        "confidence": 67,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.86,
+        "tier": "B",
+        "expected_bounce": "+8-19% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
