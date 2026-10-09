@@ -4027,5 +4027,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-10-09",
+    "picks": [
+      {
+        "ticker": "MS",
+        "price": 190.01,
+        "confidence": 76,
+        "confidence_level": "HIGH",
+        "dip_score": 7.31,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "GS",
+        "price": 897.25,
+        "confidence": 73,
+        "confidence_level": "MEDIUM",
+        "dip_score": 7.56,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      },
+      {
+        "ticker": "DE",
+        "price": 626.45,
+        "confidence": 54,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.88,
+        "tier": "B",
+        "expected_bounce": "+8-17% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
