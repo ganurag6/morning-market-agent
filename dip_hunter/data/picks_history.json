@@ -4192,5 +4192,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-10-16",
+    "picks": [
+      {
+        "ticker": "SMCI",
+        "price": 31.79,
+        "confidence": 81,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "DELL",
+        "price": 458.59,
+        "confidence": 79,
+        "confidence_level": "HIGH",
+        "dip_score": 8.22,
+        "tier": "A",
+        "expected_bounce": "+10-31% in 20-40 days"
+      },
+      {
+        "ticker": "MS",
+        "price": 181.11,
+        "confidence": 76,
+        "confidence_level": "HIGH",
+        "dip_score": 8.81,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
