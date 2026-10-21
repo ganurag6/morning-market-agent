@@ -4291,5 +4291,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-10-21",
+    "picks": [
+      {
+        "ticker": "AMAT",
+        "price": 409.38,
+        "confidence": 80,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "SMCI",
+        "price": 35.47,
+        "confidence": 79,
+        "confidence_level": "HIGH",
+        "dip_score": 6.82,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "MU",
+        "price": 918.7,
+        "confidence": 78,
+        "confidence_level": "HIGH",
+        "dip_score": 6.6,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
