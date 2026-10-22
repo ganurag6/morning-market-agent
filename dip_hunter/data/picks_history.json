@@ -4324,5 +4324,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-10-22",
+    "picks": [
+      {
+        "ticker": "AMAT",
+        "price": 379.46,
+        "confidence": 83,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "AMD",
+        "price": 509.68,
+        "confidence": 81,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "MU",
+        "price": 861.42,
+        "confidence": 81,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
