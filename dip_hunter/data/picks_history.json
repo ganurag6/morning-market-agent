@@ -4489,5 +4489,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-10-29",
+    "picks": [
+      {
+        "ticker": "CAT",
+        "price": 641.9,
+        "confidence": 89,
+        "confidence_level": "HIGH",
+        "dip_score": 9.2,
+        "tier": "A",
+        "expected_bounce": "+10-35% in 20-40 days"
+      },
+      {
+        "ticker": "MRVL",
+        "price": 215.93,
+        "confidence": 81,
+        "confidence_level": "HIGH",
+        "dip_score": 7.7,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "AMAT",
+        "price": 421.49,
+        "confidence": 80,
+        "confidence_level": "HIGH",
+        "dip_score": 6.6,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
