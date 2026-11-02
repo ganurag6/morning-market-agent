@@ -4555,5 +4555,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-11-02",
+    "picks": [
+      {
+        "ticker": "MRVL",
+        "price": 171.41,
+        "confidence": 88,
+        "confidence_level": "HIGH",
+        "dip_score": 9.2,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "CAT",
+        "price": 613.62,
+        "confidence": 85,
+        "confidence_level": "HIGH",
+        "dip_score": 8.62,
+        "tier": "A",
+        "expected_bounce": "+10-35% in 20-40 days"
+      },
+      {
+        "ticker": "AMD",
+        "price": 466.84,
+        "confidence": 82,
+        "confidence_level": "HIGH",
+        "dip_score": 8.66,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
