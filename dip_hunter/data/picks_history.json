@@ -4654,5 +4654,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-11-05",
+    "picks": [
+      {
+        "ticker": "MRVL",
+        "price": 136.71,
+        "confidence": 86,
+        "confidence_level": "HIGH",
+        "dip_score": 9.1,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "MU",
+        "price": 668.76,
+        "confidence": 85,
+        "confidence_level": "HIGH",
+        "dip_score": 8.77,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "TSM",
+        "price": 355.98,
+        "confidence": 85,
+        "confidence_level": "HIGH",
+        "dip_score": 8.75,
+        "tier": "A",
+        "expected_bounce": "+10-28% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
