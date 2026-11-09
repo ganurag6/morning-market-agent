@@ -4720,5 +4720,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-11-09",
+    "picks": [
+      {
+        "ticker": "MRVL",
+        "price": 154.6,
+        "confidence": 81,
+        "confidence_level": "HIGH",
+        "dip_score": 8.5,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "CAT",
+        "price": 598.88,
+        "confidence": 79,
+        "confidence_level": "HIGH",
+        "dip_score": 7.06,
+        "tier": "A",
+        "expected_bounce": "+10-35% in 20-40 days"
+      },
+      {
+        "ticker": "NVDA",
+        "price": 178.67,
+        "confidence": 77,
+        "confidence_level": "HIGH",
+        "dip_score": 9.2,
+        "tier": "B",
+        "expected_bounce": "+8-13% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
