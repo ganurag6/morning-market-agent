@@ -4819,5 +4819,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-11-12",
+    "picks": [
+      {
+        "ticker": "SMCI",
+        "price": 26.99,
+        "confidence": 82,
+        "confidence_level": "HIGH",
+        "dip_score": 6.21,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "NVDA",
+        "price": 166.19,
+        "confidence": 78,
+        "confidence_level": "HIGH",
+        "dip_score": 9.2,
+        "tier": "B",
+        "expected_bounce": "+8-13% in 20-40 days"
+      },
+      {
+        "ticker": "MRVL",
+        "price": 164.45,
+        "confidence": 78,
+        "confidence_level": "HIGH",
+        "dip_score": 6.16,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
