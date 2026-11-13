@@ -4852,5 +4852,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-11-13",
+    "picks": [
+      {
+        "ticker": "MRVL",
+        "price": 156.4,
+        "confidence": 80,
+        "confidence_level": "HIGH",
+        "dip_score": 6.49,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "DELL",
+        "price": 342.55,
+        "confidence": 79,
+        "confidence_level": "HIGH",
+        "dip_score": 6.22,
+        "tier": "A",
+        "expected_bounce": "+10-31% in 20-40 days"
+      },
+      {
+        "ticker": "CAT",
+        "price": 597.26,
+        "confidence": 77,
+        "confidence_level": "HIGH",
+        "dip_score": 6.04,
+        "tier": "A",
+        "expected_bounce": "+10-35% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
