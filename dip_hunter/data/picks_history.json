@@ -4951,5 +4951,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-11-18",
+    "picks": [
+      {
+        "ticker": "MRVL",
+        "price": 145.54,
+        "confidence": 81,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "DELL",
+        "price": 313.11,
+        "confidence": 81,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-31% in 20-40 days"
+      },
+      {
+        "ticker": "SMCI",
+        "price": 24.37,
+        "confidence": 81,
+        "confidence_level": "HIGH",
+        "dip_score": 8.4,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
