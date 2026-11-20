@@ -5017,5 +5017,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-11-20",
+    "picks": [
+      {
+        "ticker": "TSM",
+        "price": 319.14,
+        "confidence": 85,
+        "confidence_level": "HIGH",
+        "dip_score": 8.82,
+        "tier": "A",
+        "expected_bounce": "+10-28% in 20-40 days"
+      },
+      {
+        "ticker": "MU",
+        "price": 594.51,
+        "confidence": 83,
+        "confidence_level": "HIGH",
+        "dip_score": 8.75,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "DELL",
+        "price": 278.02,
+        "confidence": 83,
+        "confidence_level": "HIGH",
+        "dip_score": 8.65,
+        "tier": "A",
+        "expected_bounce": "+10-31% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
