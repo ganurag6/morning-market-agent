@@ -5083,5 +5083,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-11-25",
+    "picks": [
+      {
+        "ticker": "DELL",
+        "price": 297.06,
+        "confidence": 78,
+        "confidence_level": "HIGH",
+        "dip_score": 7.34,
+        "tier": "A",
+        "expected_bounce": "+10-31% in 20-40 days"
+      },
+      {
+        "ticker": "MS",
+        "price": 167.55,
+        "confidence": 75,
+        "confidence_level": "HIGH",
+        "dip_score": 8.43,
+        "tier": "B",
+        "expected_bounce": "+8-16% in 20-40 days"
+      },
+      {
+        "ticker": "GS",
+        "price": 801.03,
+        "confidence": 74,
+        "confidence_level": "MEDIUM",
+        "dip_score": 8.17,
+        "tier": "B",
+        "expected_bounce": "+8-18% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
