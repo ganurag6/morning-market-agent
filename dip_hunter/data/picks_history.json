@@ -5149,5 +5149,38 @@
       }
     ],
     "outcomes": {}
+  },
+  {
+    "date": "2026-11-27",
+    "picks": [
+      {
+        "ticker": "SMCI",
+        "price": 23.76,
+        "confidence": 76,
+        "confidence_level": "HIGH",
+        "dip_score": 5.43,
+        "tier": "A",
+        "expected_bounce": "+10-29% in 20-40 days"
+      },
+      {
+        "ticker": "AMD",
+        "price": 424.54,
+        "confidence": 71,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.8,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      },
+      {
+        "ticker": "MU",
+        "price": 646.95,
+        "confidence": 71,
+        "confidence_level": "MEDIUM",
+        "dip_score": 6.8,
+        "tier": "A",
+        "expected_bounce": "+10-40% in 20-40 days"
+      }
+    ],
+    "outcomes": {}
   }
 ]
